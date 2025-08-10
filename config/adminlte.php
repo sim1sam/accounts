@@ -351,6 +351,18 @@ return [
             'icon' => 'fas fa-fw fa-user-tie',
             'active' => ['admin/staff*'],
         ],
+        [
+            'text' => 'Add Record',
+            'url' => '#',
+            'icon' => 'fas fa-fw fa-plus-circle',
+            'submenu' => [
+                [
+                    'text' => 'Invoice Entry',
+                    'url' => 'admin/invoices/create',
+                    'icon' => 'fas fa-fw fa-file-invoice',
+                ],
+            ],
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 

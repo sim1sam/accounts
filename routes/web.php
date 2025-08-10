@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\InvoiceController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -41,6 +42,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/settings', [SettingsController::class, 'updateProfile'])->name('admin.settings.profile.update');
     Route::get('/admin/settings/password', [SettingsController::class, 'password'])->name('admin.settings.password');
     Route::post('/admin/settings/password', [SettingsController::class, 'updatePassword'])->name('admin.settings.password.update');
+    
+    // Invoice Routes
+    Route::get('/admin/invoices', [InvoiceController::class, 'index'])->name('admin.invoices.index');
+    Route::get('/admin/invoices/create', [InvoiceController::class, 'create'])->name('admin.invoices.create');
+    Route::post('/admin/invoices', [InvoiceController::class, 'store'])->name('admin.invoices.store');
+    Route::get('/admin/invoices/{invoice}', [InvoiceController::class, 'show'])->name('admin.invoices.show');
+    Route::get('/admin/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('admin.invoices.edit');
+    Route::put('/admin/invoices/{invoice}', [InvoiceController::class, 'update'])->name('admin.invoices.update');
+    Route::delete('/admin/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('admin.invoices.destroy');
+    Route::post('/admin/find-customer', [InvoiceController::class, 'findCustomerByMobile'])->name('admin.find.customer');
 });
 
 // Redirect /home to admin dashboard for authenticated users
