@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\SettingsController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -34,6 +35,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/staff/{staff}/edit', [StaffController::class, 'edit'])->name('admin.staff.edit');
     Route::put('/admin/staff/{staff}', [StaffController::class, 'update'])->name('admin.staff.update');
     Route::delete('/admin/staff/{staff}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
+    
+    // Settings Routes
+    Route::get('/admin/settings', [SettingsController::class, 'profile'])->name('admin.settings.profile');
+    Route::post('/admin/settings', [SettingsController::class, 'updateProfile'])->name('admin.settings.profile.update');
+    Route::get('/admin/settings/password', [SettingsController::class, 'password'])->name('admin.settings.password');
+    Route::post('/admin/settings/password', [SettingsController::class, 'updatePassword'])->name('admin.settings.password.update');
 });
 
 // Redirect /home to admin dashboard for authenticated users
