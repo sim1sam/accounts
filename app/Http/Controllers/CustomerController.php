@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,7 +23,8 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        return view('admin.customers.create');
+        $staff = Staff::where('status', 'active')->orderBy('name')->get();
+        return view('admin.customers.create', compact('staff'));
     }
 
     /**
@@ -37,7 +39,7 @@ class CustomerController extends Controller
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
             'delivery_class' => 'nullable|string|max:50',
-            'kam' => 'nullable|string|max:100',
+            'kam' => 'nullable|exists:staff,id',
         ]);
 
         if ($validator->fails()) {
@@ -65,7 +67,8 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        return view('admin.customers.edit', compact('customer'));
+        $staff = Staff::where('status', 'active')->orderBy('name')->get();
+        return view('admin.customers.edit', compact('customer', 'staff'));
     }
 
     /**
@@ -80,7 +83,7 @@ class CustomerController extends Controller
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
             'delivery_class' => 'nullable|string|max:50',
-            'kam' => 'nullable|string|max:100',
+            'kam' => 'nullable|exists:staff,id',
         ]);
 
         if ($validator->fails()) {

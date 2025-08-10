@@ -48,7 +48,7 @@
                         </tr>
                         <tr>
                             <th>KAM</th>
-                            <td>{{ $customer->kam ?? 'N/A' }}</td>
+                            <td>{{ $customer->keyAccountManager ? $customer->keyAccountManager->name : 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>Created At</th>

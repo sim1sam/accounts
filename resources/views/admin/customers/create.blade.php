@@ -82,7 +82,12 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="kam">KAM (Staff Responsible)</label>
-                            <input type="text" name="kam" id="kam" class="form-control @error('kam') is-invalid @enderror" value="{{ old('kam') }}">
+                            <select name="kam" id="kam" class="form-control @error('kam') is-invalid @enderror">
+                                <option value="">Select Staff Member</option>
+                                @foreach($staff as $staffMember)
+                                    <option value="{{ $staffMember->id }}" {{ old('kam') == $staffMember->id ? 'selected' : '' }}>{{ $staffMember->name }}</option>
+                                @endforeach
+                            </select>
                             @error('kam')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror

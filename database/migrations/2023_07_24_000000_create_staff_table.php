@@ -11,16 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('staff', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('mobile');
             $table->string('email')->nullable();
-            $table->text('address')->nullable();
-            $table->date('dob')->nullable();
-            $table->string('delivery_class')->nullable();
-            $table->unsignedBigInteger('kam')->nullable()->comment('Key Account Manager / Staff Responsible');
-            $table->foreign('kam')->references('id')->on('staff')->onDelete('set null');
+            $table->string('phone')->nullable();
+            $table->string('position')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }
@@ -30,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('staff');
     }
 };

@@ -345,6 +345,12 @@ return [
             'active' => ['admin/customers*'],
         ],
         [
+            'text' => 'Staff',
+            'url' => 'admin/staff',
+            'icon' => 'fas fa-fw fa-user-tie',
+            'active' => ['admin/staff*'],
+        ],
+        [
             'text' => 'multilevel',
             'icon' => 'fas fa-fw fa-share',
             'submenu' => [

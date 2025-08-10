@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Customer extends Model
 {
@@ -32,4 +33,12 @@ class Customer extends Model
     protected $casts = [
         'dob' => 'date',
     ];
+    
+    /**
+     * Get the staff member who is the KAM for this customer.
+     */
+    public function keyAccountManager()
+    {
+        return $this->belongsTo(Staff::class, 'kam');
+    }
 }
