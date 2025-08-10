@@ -24,7 +24,7 @@
                         @endif
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="customer_select">Select Customer</label>
                                     <div class="dropdown">
@@ -48,12 +48,24 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="invoice_id">Invoice ID</label>
-                                    <input type="text" class="form-control @error('invoice_id') is-invalid @enderror" id="invoice_id" name="invoice_id" value="{{ old('invoice_id') }}" required>
+                                    <input type="text" class="form-control @error('invoice_id') is-invalid @enderror" id="invoice_id" name="invoice_id" value="{{ old('invoice_id') }}" placeholder="Enter a custom invoice number" required>
                                     <small class="text-muted">Enter a custom invoice number</small>
                                     @error('invoice_id')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="invoice_value">Invoice Value</label>
+                                    <input type="number" step="0.01" class="form-control @error('invoice_value') is-invalid @enderror" id="invoice_value" name="invoice_value" value="{{ old('invoice_value') }}" placeholder="Enter invoice value" required>
+                                    @error('invoice_value')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
                                         </span>
@@ -68,7 +80,6 @@
                                     <h3 class="card-title">Customer Details</h3>
                                 </div>
                                 <div class="card-body">
-                                    <input type="hidden" name="customer_id" id="customer_id">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
@@ -115,34 +126,9 @@
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="invoice_value">Invoice Value</label>
-                                    <input type="number" step="0.01" class="form-control @error('invoice_value') is-invalid @enderror" id="invoice_value" name="invoice_value" value="{{ old('invoice_value') }}" required>
-                                    @error('invoice_value')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Invoice Value field is already defined above -->
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Created At</label>
-                                    <p>{{ now()->format('Y-m-d H:i:s') }}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Updated At</label>
-                                    <p>{{ now()->format('Y-m-d H:i:s') }}</p>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Timestamps are automatically saved in the database -->
                     </div>
                     
                     <div class="card-footer">
@@ -190,6 +176,9 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Fix dropdown initialization
+            $('.dropdown-toggle').dropdown();
+            
             // Handle customer search
             $('#customer_search').on('keyup', function(e) {
                 e.stopPropagation();
@@ -210,7 +199,7 @@
             });
             
             // Handle customer selection
-            $('.customer-option').on('click', function(e) {
+            $(document).on('click', '.customer-option', function(e) {
                 e.preventDefault();
                 const customerId = $(this).data('id');
                 const customerMobile = $(this).data('mobile');
@@ -257,7 +246,6 @@
                     }
                 });
             }
-            });
         });
     </script>
 @stop
