@@ -357,8 +357,8 @@ return [
             'icon' => 'fas fa-fw fa-plus-circle',
             'submenu' => [
                 [
-                    'text' => 'Invoice Entry',
-                    'url' => 'admin/invoices/create',
+                    'text' => 'Invoice',
+                    'url' => 'admin/invoices',
                     'icon' => 'fas fa-fw fa-file-invoice',
                 ],
             ],
