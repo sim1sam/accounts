@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cancellation;
+use App\Models\Customer;
+use Illuminate\Http\Request;
+
+class CancellationController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $cancellations = Cancellation::with('customer')->latest()->get();
+        return view('admin.cancellations.index', compact('cancellations'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        $customers = Customer::all();
+        return view('admin.cancellations.create', compact('customers'));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'cancellation_value' => 'required|numeric|min:0',
+            'remarks' => 'nullable|string',
+            'cancellation_date' => 'required|date'
+        ]);
+
+        Cancellation::create($request->all());
+
+        return redirect()->route('admin.cancellations.index')
+            ->with('success', 'Cancellation created successfully.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $cancellation = Cancellation::with('customer')->findOrFail($id);
+        return view('admin.cancellations.show', compact('cancellation'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $cancellation = Cancellation::findOrFail($id);
+        $customers = Customer::all();
+        return view('admin.cancellations.edit', compact('cancellation', 'customers'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'cancellation_value' => 'required|numeric|min:0',
+            'remarks' => 'nullable|string',
+            'cancellation_date' => 'required|date'
+        ]);
+
+        $cancellation = Cancellation::findOrFail($id);
+        $cancellation->update($request->all());
+
+        return redirect()->route('admin.cancellations.index')
+            ->with('success', 'Cancellation updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $cancellation = Cancellation::findOrFail($id);
+        $cancellation->delete();
+
+        return redirect()->route('admin.cancellations.index')
+            ->with('success', 'Cancellation deleted successfully.');
+    }
+}

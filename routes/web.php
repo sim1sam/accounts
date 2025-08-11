@@ -9,6 +9,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\Admin\CancellationController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -72,6 +73,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/deliveries/{delivery}/edit', [DeliveryController::class, 'edit'])->name('admin.deliveries.edit');
     Route::put('/admin/deliveries/{delivery}', [DeliveryController::class, 'update'])->name('admin.deliveries.update');
     Route::delete('/admin/deliveries/{delivery}', [DeliveryController::class, 'destroy'])->name('admin.deliveries.destroy');
+    
+    // Cancellation Routes
+    Route::get('/admin/cancellations', [CancellationController::class, 'index'])->name('admin.cancellations.index');
+    Route::get('/admin/cancellations/create', [CancellationController::class, 'create'])->name('admin.cancellations.create');
+    Route::post('/admin/cancellations', [CancellationController::class, 'store'])->name('admin.cancellations.store');
+    Route::get('/admin/cancellations/{cancellation}', [CancellationController::class, 'show'])->name('admin.cancellations.show');
+    Route::get('/admin/cancellations/{cancellation}/edit', [CancellationController::class, 'edit'])->name('admin.cancellations.edit');
+    Route::put('/admin/cancellations/{cancellation}', [CancellationController::class, 'update'])->name('admin.cancellations.update');
+    Route::delete('/admin/cancellations/{cancellation}', [CancellationController::class, 'destroy'])->name('admin.cancellations.destroy');
 });
 
 // Redirect /home to admin dashboard for authenticated users

@@ -371,6 +371,11 @@ return [
                     'url' => 'admin/deliveries',
                     'icon' => 'fas fa-fw fa-truck',
                 ],
+                [
+                    'text' => 'Cancellation',
+                    'url' => 'admin/cancellations',
+                    'icon' => 'fas fa-fw fa-ban',
+                ],
             ],
         ],
         // Multi Level menu and Labels removed as requested
