@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -52,6 +53,15 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/invoices/{invoice}', [InvoiceController::class, 'update'])->name('admin.invoices.update');
     Route::delete('/admin/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('admin.invoices.destroy');
     Route::post('/admin/find-customer', [InvoiceController::class, 'findCustomerByMobile'])->name('admin.find.customer');
+    
+    // Payment Routes
+    Route::get('/admin/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
+    Route::get('/admin/payments/create', [PaymentController::class, 'create'])->name('admin.payments.create');
+    Route::post('/admin/payments', [PaymentController::class, 'store'])->name('admin.payments.store');
+    Route::get('/admin/payments/{payment}', [PaymentController::class, 'show'])->name('admin.payments.show');
+    Route::get('/admin/payments/{payment}/edit', [PaymentController::class, 'edit'])->name('admin.payments.edit');
+    Route::put('/admin/payments/{payment}', [PaymentController::class, 'update'])->name('admin.payments.update');
+    Route::delete('/admin/payments/{payment}', [PaymentController::class, 'destroy'])->name('admin.payments.destroy');
 });
 
 // Redirect /home to admin dashboard for authenticated users

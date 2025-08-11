@@ -361,6 +361,11 @@ return [
                     'url' => 'admin/invoices',
                     'icon' => 'fas fa-fw fa-file-invoice',
                 ],
+                [
+                    'text' => 'Payment',
+                    'url' => 'admin/payments',
+                    'icon' => 'fas fa-fw fa-money-bill-wave',
+                ],
             ],
         ],
         // Multi Level menu and Labels removed as requested
