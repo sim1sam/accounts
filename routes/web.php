@@ -8,6 +8,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DeliveryController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -62,6 +63,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/payments/{payment}/edit', [PaymentController::class, 'edit'])->name('admin.payments.edit');
     Route::put('/admin/payments/{payment}', [PaymentController::class, 'update'])->name('admin.payments.update');
     Route::delete('/admin/payments/{payment}', [PaymentController::class, 'destroy'])->name('admin.payments.destroy');
+    
+    // Delivery Routes
+    Route::get('/admin/deliveries', [DeliveryController::class, 'index'])->name('admin.deliveries.index');
+    Route::get('/admin/deliveries/create', [DeliveryController::class, 'create'])->name('admin.deliveries.create');
+    Route::post('/admin/deliveries', [DeliveryController::class, 'store'])->name('admin.deliveries.store');
+    Route::get('/admin/deliveries/{delivery}', [DeliveryController::class, 'show'])->name('admin.deliveries.show');
+    Route::get('/admin/deliveries/{delivery}/edit', [DeliveryController::class, 'edit'])->name('admin.deliveries.edit');
+    Route::put('/admin/deliveries/{delivery}', [DeliveryController::class, 'update'])->name('admin.deliveries.update');
+    Route::delete('/admin/deliveries/{delivery}', [DeliveryController::class, 'destroy'])->name('admin.deliveries.destroy');
 });
 
 // Redirect /home to admin dashboard for authenticated users

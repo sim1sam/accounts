@@ -366,6 +366,11 @@ return [
                     'url' => 'admin/payments',
                     'icon' => 'fas fa-fw fa-money-bill-wave',
                 ],
+                [
+                    'text' => 'Delivery',
+                    'url' => 'admin/deliveries',
+                    'icon' => 'fas fa-fw fa-truck',
+                ],
             ],
         ],
         // Multi Level menu and Labels removed as requested
