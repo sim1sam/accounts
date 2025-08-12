@@ -22,127 +22,126 @@
                                 {{ session('success') }}
                             </div>
                         @endif
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="customer_select">Select Customer</label>
-                                    <div class="dropdown">
-                                        <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
-                                            <span id="selectedCustomerText">-- Select Customer --</span>
-                                            <span class="caret float-right mt-1"></span>
-                                        </button>
-                                        <div class="dropdown-menu w-100" aria-labelledby="customerDropdown" style="max-height: 300px; overflow-y: auto;">
-                                            <input type="text" class="form-control mb-2 mx-2" id="customer_search" placeholder="Search by mobile number" style="width: 95%;">
-                                            <div class="dropdown-divider"></div>
-                                            <div id="customerOptions">
-                                                @foreach($customers as $customer)
-                                                    <a class="dropdown-item customer-option" href="#" data-id="{{ $customer->id }}" data-mobile="{{ $customer->mobile }}" data-name="{{ $customer->name }}">
-                                                        {{ $customer->mobile }} - {{ $customer->name }}
-                                                    </a>
-                                                @endforeach
+                        
+                        <div id="cancellation-entries">
+                            <!-- Cancellation entries will be added here -->
+                            <div class="cancellation-entry mb-4" data-entry-id="0">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h4>Cancellation Entry #1</h4>
+                                    <button type="button" class="btn btn-sm btn-danger remove-entry" style="display: none;"><i class="fas fa-times"></i> Remove</button>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="customer_select_0">Select Customer</label>
+                                            <div class="dropdown">
+                                                <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown_0" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                                    <span id="selectedCustomerText_0">-- Select Customer --</span>
+                                                    <span class="caret float-right mt-1"></span>
+                                                </button>
+                                                <div class="dropdown-menu w-100" aria-labelledby="customerDropdown_0" style="max-height: 300px; overflow-y: auto;">
+                                                    <input type="text" class="form-control mb-2 mx-2 customer-search" id="customer_search_0" placeholder="Search by mobile number" style="width: 95%;">
+                                                    <div class="dropdown-divider"></div>
+                                                    <div id="customerOptions_0">
+                                                        @foreach($customers as $customer)
+                                                            <a class="dropdown-item customer-option" href="#" data-entry-id="0" data-id="{{ $customer->id }}" data-mobile="{{ $customer->mobile }}" data-name="{{ $customer->name }}">
+                                                                {{ $customer->mobile }} - {{ $customer->name }}
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="customer_id_0" name="cancellations[0][customer_id]" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="cancellation_value_0">Cancellation Value</label>
+                                            <input type="number" class="form-control" id="cancellation_value_0" name="cancellations[0][cancellation_value]" placeholder="Enter cancellation value" step="0.01" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="cancellation_date_0">Cancellation Date</label>
+                                            <input type="date" class="form-control" id="cancellation_date_0" name="cancellations[0][cancellation_date]" value="{{ date('Y-m-d') }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="remarks_0">Remarks</label>
+                                            <textarea class="form-control" id="remarks_0" name="cancellations[0][remarks]" rows="3" placeholder="Enter remarks"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Customer details section for this entry -->
+                                <div id="customerDetails_0" class="customer-details" style="display: none;">
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Customer Details</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Name</label>
+                                                        <p id="customerName_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Mobile</label>
+                                                        <p id="customerMobile_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Email</label>
+                                                        <p id="customerEmail_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Address</label>
+                                                        <p id="customerAddress_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Delivery Class</label>
+                                                        <p id="customerDeliveryClass_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>KAM/Staff Responsible</label>
+                                                        <p id="customerKAM_0" class="form-control-static"></p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <input type="hidden" id="customer_id" name="customer_id" required>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="cancellation_value">Cancellation Value</label>
-                                    <input type="number" class="form-control @error('cancellation_value') is-invalid @enderror" id="cancellation_value" name="cancellation_value" value="{{ old('cancellation_value') }}" placeholder="Enter cancellation value" step="0.01" required>
-                                    @error('cancellation_value')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="cancellation_date">Cancellation Date</label>
-                                    <input type="date" class="form-control @error('cancellation_date') is-invalid @enderror" id="cancellation_date" name="cancellation_date" value="{{ old('cancellation_date') ?? date('Y-m-d') }}" required>
-                                    @error('cancellation_date')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="remarks">Remarks</label>
-                                    <textarea class="form-control @error('remarks') is-invalid @enderror" id="remarks" name="remarks" rows="3" placeholder="Enter cancellation remarks">{{ old('remarks') }}</textarea>
-                                    @error('remarks')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">Create Cancellation</button>
+                            <a href="{{ route('admin.cancellations.index') }}" class="btn btn-default">Cancel</a>
+                            <button type="button" class="btn btn-success float-right" id="addAnotherEntry">
+                                <i class="fas fa-plus"></i> Add Another Cancellation
+                            </button>
                         </div>
-                        
-                        <div id="customerDetails" style="display: none;">
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Customer Details</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Name</label>
-                                                <p id="customerName" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Mobile</label>
-                                                <p id="customerMobile" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Email</label>
-                                                <p id="customerEmail" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Address</label>
-                                                <p id="customerAddress" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Delivery Class</label>
-                                                <p id="customerDeliveryClass" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>KAM/Staff Responsible</label>
-                                                <p id="customerKAM" class="form-control-static"></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary" id="submitBtn">Create Cancellation</button>
-                        <a href="{{ route('admin.cancellations.index') }}" class="btn btn-default">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -172,20 +171,33 @@
         .select2-dropdown {
             border: 1px solid #ced4da;
         }
+        .cancellation-entry {
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .cancellation-entry:last-child {
+            border-bottom: none;
+        }
     </style>
 @stop
 
 @section('js')
     <script>
         $(document).ready(function() {
+            // Initialize entry counter
+            let entryCounter = 0;
+            
             // Fix dropdown initialization
             $('.dropdown-toggle').dropdown();
             
-            // Handle customer search
-            $('#customer_search').on('keyup', function(e) {
+            // Handle customer search for all entries
+            $(document).on('keyup', '.customer-search', function(e) {
                 e.stopPropagation();
                 const searchText = $(this).val().toLowerCase();
-                $('.customer-option').each(function() {
+                const entryId = $(this).closest('.cancellation-entry').data('entry-id');
+                
+                $(`#customerOptions_${entryId} .customer-option`).each(function() {
                     const optionText = $(this).text().toLowerCase();
                     if (optionText.indexOf(searchText) > -1) {
                         $(this).show();
@@ -196,30 +208,31 @@
             });
             
             // Prevent dropdown from closing when clicking on search input
-            $('#customer_search').on('click', function(e) {
+            $(document).on('click', '.customer-search', function(e) {
                 e.stopPropagation();
             });
             
-            // Handle customer selection
+            // Handle customer selection for all entries
             $(document).on('click', '.customer-option', function(e) {
                 e.preventDefault();
+                const entryId = $(this).data('entry-id');
                 const customerId = $(this).data('id');
                 const customerMobile = $(this).data('mobile');
                 const customerName = $(this).data('name');
                 
                 // Update the button text and hidden input
-                $('#selectedCustomerText').text(customerMobile + ' - ' + customerName);
-                $('#customer_id').val(customerId);
+                $(`#selectedCustomerText_${entryId}`).text(customerMobile + ' - ' + customerName);
+                $(`#customer_id_${entryId}`).val(customerId);
                 
                 // Close the dropdown
-                $('#customerDropdown').dropdown('toggle');
+                $(`#customerDropdown_${entryId}`).dropdown('toggle');
                 
                 // Trigger the customer selection event
-                selectCustomer(customerMobile);
+                selectCustomer(customerMobile, entryId);
             });
             
             // Function to select a customer and fetch details
-            function selectCustomer(customerMobile) {
+            function selectCustomer(customerMobile, entryId) {
                 // Get full customer details via AJAX
                 $.ajax({
                     url: "{{ route('admin.find.customer') }}",
@@ -230,14 +243,14 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Display customer details
-                            $('#customerDetails').show();
-                            $('#customerName').text(response.customer.name);
-                            $('#customerMobile').text(response.customer.mobile);
-                            $('#customerEmail').text(response.customer.email || 'N/A');
-                            $('#customerAddress').text(response.customer.address || 'N/A');
-                            $('#customerDeliveryClass').text(response.customer.delivery_class || 'N/A');
-                            $('#customerKAM').text(response.kam || 'Not Assigned');
+                            // Display customer details for this entry
+                            $(`#customerDetails_${entryId}`).show();
+                            $(`#customerName_${entryId}`).text(response.customer.name);
+                            $(`#customerMobile_${entryId}`).text(response.customer.mobile);
+                            $(`#customerEmail_${entryId}`).text(response.customer.email || 'N/A');
+                            $(`#customerAddress_${entryId}`).text(response.customer.address || 'N/A');
+                            $(`#customerDeliveryClass_${entryId}`).text(response.customer.delivery_class || 'N/A');
+                            $(`#customerKAM_${entryId}`).text(response.kam || 'Not Assigned');
                             
                             // Enable submit button
                             $('#submitBtn').prop('disabled', false);
@@ -248,6 +261,148 @@
                     }
                 });
             }
+            
+            // Add another cancellation entry
+            $('#addAnotherEntry').on('click', function(e) {
+                e.preventDefault();
+                entryCounter++;
+                
+                // Show remove buttons for all entries when we have more than one
+                $('.remove-entry').show();
+                
+                // Clone the template and update IDs and names
+                const newEntry = `
+                    <div class="cancellation-entry mb-4" data-entry-id="${entryCounter}">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h4>Cancellation Entry #${entryCounter + 1}</h4>
+                            <button type="button" class="btn btn-sm btn-danger remove-entry"><i class="fas fa-times"></i> Remove</button>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="customer_select_${entryCounter}">Select Customer</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown_${entryCounter}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                            <span id="selectedCustomerText_${entryCounter}">-- Select Customer --</span>
+                                            <span class="caret float-right mt-1"></span>
+                                        </button>
+                                        <div class="dropdown-menu w-100" aria-labelledby="customerDropdown_${entryCounter}" style="max-height: 300px; overflow-y: auto;">
+                                            <input type="text" class="form-control mb-2 mx-2 customer-search" id="customer_search_${entryCounter}" placeholder="Search by mobile number" style="width: 95%;">
+                                            <div class="dropdown-divider"></div>
+                                            <div id="customerOptions_${entryCounter}">
+                                                @foreach($customers as $customer)
+                                                    <a class="dropdown-item customer-option" href="#" data-entry-id="${entryCounter}" data-id="{{ $customer->id }}" data-mobile="{{ $customer->mobile }}" data-name="{{ $customer->name }}">
+                                                        {{ $customer->mobile }} - {{ $customer->name }}
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="customer_id_${entryCounter}" name="cancellations[${entryCounter}][customer_id]" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="cancellation_value_${entryCounter}">Cancellation Value</label>
+                                    <input type="number" class="form-control" id="cancellation_value_${entryCounter}" name="cancellations[${entryCounter}][cancellation_value]" placeholder="Enter cancellation value" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="cancellation_date_${entryCounter}">Cancellation Date</label>
+                                    <input type="date" class="form-control" id="cancellation_date_${entryCounter}" name="cancellations[${entryCounter}][cancellation_date]" value="{{ date('Y-m-d') }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="remarks_${entryCounter}">Remarks</label>
+                                    <textarea class="form-control" id="remarks_${entryCounter}" name="cancellations[${entryCounter}][remarks]" rows="3" placeholder="Enter remarks"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer details section for this entry -->
+                        <div id="customerDetails_${entryCounter}" class="customer-details" style="display: none;">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">Customer Details</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Name</label>
+                                                <p id="customerName_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Mobile</label>
+                                                <p id="customerMobile_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Email</label>
+                                                <p id="customerEmail_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Address</label>
+                                                <p id="customerAddress_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Delivery Class</label>
+                                                <p id="customerDeliveryClass_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>KAM/Staff Responsible</label>
+                                                <p id="customerKAM_${entryCounter}" class="form-control-static"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Append the new entry to the container
+                $('#cancellation-entries').append(newEntry);
+                
+                // Initialize dropdown for the new entry
+                $('.dropdown-toggle').dropdown();
+            });
+            
+            // Remove cancellation entry
+            $(document).on('click', '.remove-entry', function() {
+                $(this).closest('.cancellation-entry').remove();
+                
+                // Hide remove buttons if only one entry remains
+                if ($('.cancellation-entry').length === 1) {
+                    $('.remove-entry').hide();
+                }
+                
+                // Renumber the entries
+                $('.cancellation-entry').each(function(index) {
+                    $(this).find('h4').text(`Cancellation Entry #${index + 1}`);
+                });
+            });
         });
     </script>
 @stop

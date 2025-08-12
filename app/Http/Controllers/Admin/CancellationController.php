@@ -32,17 +32,39 @@ class CancellationController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'cancellation_value' => 'required|numeric|min:0',
-            'remarks' => 'nullable|string',
-            'cancellation_date' => 'required|date'
-        ]);
+        // Check if we have multiple cancellations
+        if ($request->has('cancellations')) {
+            // Validate each cancellation entry
+            foreach ($request->cancellations as $index => $cancellationData) {
+                $request->validate([
+                    "cancellations.{$index}.customer_id" => 'required|exists:customers,id',
+                    "cancellations.{$index}.cancellation_value" => 'required|numeric|min:0',
+                    "cancellations.{$index}.remarks" => 'nullable|string',
+                    "cancellations.{$index}.cancellation_date" => 'required|date'
+                ]);
+            }
+            
+            // Create each cancellation
+            foreach ($request->cancellations as $cancellationData) {
+                Cancellation::create($cancellationData);
+            }
+            
+            return redirect()->route('admin.cancellations.index')
+                ->with('success', count($request->cancellations) . ' cancellations created successfully.');
+        } else {
+            // Handle single cancellation (legacy support)
+            $request->validate([
+                'customer_id' => 'required|exists:customers,id',
+                'cancellation_value' => 'required|numeric|min:0',
+                'remarks' => 'nullable|string',
+                'cancellation_date' => 'required|date'
+            ]);
 
-        Cancellation::create($request->all());
+            Cancellation::create($request->all());
 
-        return redirect()->route('admin.cancellations.index')
-            ->with('success', 'Cancellation created successfully.');
+            return redirect()->route('admin.cancellations.index')
+                ->with('success', 'Cancellation created successfully.');
+        }
     }
 
     /**
