@@ -32,18 +32,49 @@ class RefundController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'refund_amount' => 'required|numeric|min:0',
-            'refund_date' => 'required|date',
-            'account' => 'nullable|string',
-            'remarks' => 'nullable|string'
-        ]);
+        // Check if we're dealing with multiple refunds
+        if ($request->has('refunds')) {
+            $refundsData = $request->refunds;
+            $count = 0;
+            
+            foreach ($refundsData as $refundData) {
+                // Validate each refund entry
+                $validator = validator($refundData, [
+                    'customer_id' => 'required|exists:customers,id',
+                    'refund_amount' => 'required|numeric|min:0',
+                    'refund_date' => 'required|date',
+                    'account' => 'nullable|string',
+                    'remarks' => 'nullable|string'
+                ]);
+                
+                if ($validator->fails()) {
+                    return back()
+                        ->withErrors($validator)
+                        ->withInput();
+                }
+                
+                // Create the refund
+                Refund::create($refundData);
+                $count++;
+            }
+            
+            return redirect()->route('admin.refunds.index')
+                ->with('success', $count . ' refunds created successfully.');
+        } else {
+            // Handle single refund (backward compatibility)
+            $request->validate([
+                'customer_id' => 'required|exists:customers,id',
+                'refund_amount' => 'required|numeric|min:0',
+                'refund_date' => 'required|date',
+                'account' => 'nullable|string',
+                'remarks' => 'nullable|string'
+            ]);
 
-        Refund::create($request->all());
+            Refund::create($request->all());
 
-        return redirect()->route('admin.refunds.index')
-            ->with('success', 'Refund created successfully.');
+            return redirect()->route('admin.refunds.index')
+                ->with('success', 'Refund created successfully.');
+        }
     }
 
     /**
