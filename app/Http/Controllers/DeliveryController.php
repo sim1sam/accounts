@@ -31,17 +31,39 @@ class DeliveryController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'delivery_value' => 'required|numeric|min:0',
-            'delivery_date' => 'required|date',
-            'shipment_no' => 'required|string|max:255',
-        ]);
-        
-        Delivery::create($validated);
-        
-        return redirect()->route('admin.deliveries.index')
-            ->with('success', 'Delivery created successfully.');
+        // Check if we have multiple deliveries
+        if ($request->has('deliveries')) {
+            // Validate each delivery entry
+            foreach ($request->deliveries as $index => $deliveryData) {
+                $request->validate([
+                    "deliveries.{$index}.customer_id" => 'required|exists:customers,id',
+                    "deliveries.{$index}.delivery_value" => 'required|numeric|min:0',
+                    "deliveries.{$index}.delivery_date" => 'required|date',
+                    "deliveries.{$index}.shipment_no" => 'required|string|max:255',
+                ]);
+            }
+            
+            // Create each delivery
+            foreach ($request->deliveries as $deliveryData) {
+                Delivery::create($deliveryData);
+            }
+            
+            return redirect()->route('admin.deliveries.index')
+                ->with('success', count($request->deliveries) . ' deliveries created successfully.');
+        } else {
+            // Handle single delivery (legacy support)
+            $validated = $request->validate([
+                'customer_id' => 'required|exists:customers,id',
+                'delivery_value' => 'required|numeric|min:0',
+                'delivery_date' => 'required|date',
+                'shipment_no' => 'required|string|max:255',
+            ]);
+            
+            Delivery::create($validated);
+            
+            return redirect()->route('admin.deliveries.index')
+                ->with('success', 'Delivery created successfully.');
+        }
     }
 
     /**
