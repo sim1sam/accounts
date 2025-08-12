@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\Admin\CancellationController;
+use App\Http\Controllers\Admin\RefundController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -82,6 +83,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/cancellations/{cancellation}/edit', [CancellationController::class, 'edit'])->name('admin.cancellations.edit');
     Route::put('/admin/cancellations/{cancellation}', [CancellationController::class, 'update'])->name('admin.cancellations.update');
     Route::delete('/admin/cancellations/{cancellation}', [CancellationController::class, 'destroy'])->name('admin.cancellations.destroy');
+    
+    // Refund Routes
+    Route::get('/admin/refunds', [RefundController::class, 'index'])->name('admin.refunds.index');
+    Route::get('/admin/refunds/create', [RefundController::class, 'create'])->name('admin.refunds.create');
+    Route::post('/admin/refunds', [RefundController::class, 'store'])->name('admin.refunds.store');
+    Route::get('/admin/refunds/{refund}', [RefundController::class, 'show'])->name('admin.refunds.show');
+    Route::get('/admin/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('admin.refunds.edit');
+    Route::put('/admin/refunds/{refund}', [RefundController::class, 'update'])->name('admin.refunds.update');
+    Route::delete('/admin/refunds/{refund}', [RefundController::class, 'destroy'])->name('admin.refunds.destroy');
 });
 
 // Redirect /home to admin dashboard for authenticated users

@@ -376,6 +376,11 @@ return [
                     'url' => 'admin/cancellations',
                     'icon' => 'fas fa-fw fa-ban',
                 ],
+                [
+                    'text' => 'Refund',
+                    'url' => 'admin/refunds',
+                    'icon' => 'fas fa-fw fa-undo-alt',
+                ],
             ],
         ],
         // Multi Level menu and Labels removed as requested
