@@ -34,20 +34,56 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'invoice_id' => 'required|string|unique:invoices,invoice_id',
-            'customer_id' => 'required|exists:customers,id',
-            'invoice_value' => 'required|numeric|min:0',
-        ]);
-        
-        $invoice = Invoice::create([
-            'invoice_id' => $request->invoice_id,
-            'customer_id' => $request->customer_id,
-            'invoice_value' => $request->invoice_value,
-        ]);
-        
-        return redirect()->route('admin.invoices.index')
-            ->with('success', 'Invoice created successfully!');
+        // Check if we're handling multiple invoices or a single invoice
+        if ($request->has('invoices')) {
+            // Multiple invoices
+            $successCount = 0;
+            
+            foreach ($request->invoices as $key => $invoiceData) {
+                // Validate each invoice
+                $validator = validator($invoiceData, [
+                    'invoice_id' => 'required|string|unique:invoices,invoice_id',
+                    'customer_id' => 'required|exists:customers,id',
+                    'invoice_value' => 'required|numeric|min:0',
+                ]);
+                
+                if ($validator->fails()) {
+                    continue; // Skip this invoice if validation fails
+                }
+                
+                // Create the invoice
+                Invoice::create([
+                    'invoice_id' => $invoiceData['invoice_id'],
+                    'customer_id' => $invoiceData['customer_id'],
+                    'invoice_value' => $invoiceData['invoice_value'],
+                ]);
+                
+                $successCount++;
+            }
+            
+            $message = $successCount > 0 
+                ? ($successCount . ' ' . ($successCount == 1 ? 'invoice' : 'invoices') . ' created successfully!') 
+                : 'No invoices were created. Please check your input.';
+                
+            return redirect()->route('admin.invoices.index')
+                ->with('success', $message);
+        } else {
+            // Single invoice (legacy support)
+            $request->validate([
+                'invoice_id' => 'required|string|unique:invoices,invoice_id',
+                'customer_id' => 'required|exists:customers,id',
+                'invoice_value' => 'required|numeric|min:0',
+            ]);
+            
+            $invoice = Invoice::create([
+                'invoice_id' => $request->invoice_id,
+                'customer_id' => $request->customer_id,
+                'invoice_value' => $request->invoice_value,
+            ]);
+            
+            return redirect()->route('admin.invoices.index')
+                ->with('success', 'Invoice created successfully!');
+        }
     }
 
     /**
