@@ -383,6 +383,12 @@ return [
                 ],
             ],
         ],
+        [
+            'text' => 'Bank',
+            'url' => 'admin/banks',
+            'icon' => 'fas fa-fw fa-university',
+            'active' => ['admin/banks*'],
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 

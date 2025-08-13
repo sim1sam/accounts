@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\Admin\CancellationController;
 use App\Http\Controllers\Admin\RefundController;
+use App\Http\Controllers\BankController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -92,6 +93,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('admin.refunds.edit');
     Route::put('/admin/refunds/{refund}', [RefundController::class, 'update'])->name('admin.refunds.update');
     Route::delete('/admin/refunds/{refund}', [RefundController::class, 'destroy'])->name('admin.refunds.destroy');
+    
+    // Bank Routes
+    Route::get('/admin/banks', [BankController::class, 'index'])->name('admin.banks.index');
+    Route::get('/admin/banks/create', [BankController::class, 'create'])->name('admin.banks.create');
+    Route::post('/admin/banks', [BankController::class, 'store'])->name('admin.banks.store');
+    Route::get('/admin/banks/{bank}', [BankController::class, 'show'])->name('admin.banks.show');
+    Route::get('/admin/banks/{bank}/edit', [BankController::class, 'edit'])->name('admin.banks.edit');
+    Route::put('/admin/banks/{bank}', [BankController::class, 'update'])->name('admin.banks.update');
+    Route::delete('/admin/banks/{bank}', [BankController::class, 'destroy'])->name('admin.banks.destroy');
+    Route::post('/admin/banks/{bank}/adjust-balance', [BankController::class, 'adjustBalance'])->name('admin.banks.adjust-balance');
 });
 
 // Redirect /home to admin dashboard for authenticated users
