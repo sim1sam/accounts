@@ -24,23 +24,46 @@ class PaymentController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'customer_id' => 'required|exists:customers,id',
-            'amount' => 'required|numeric|min:0',
-            'payment_date' => 'required|date',
-            'account_no' => 'required|string|max:255',
-        ]);
+        // Check if we have multiple payments
+        if (isset($request->payments) && is_array($request->payments)) {
+            $successCount = 0;
+            
+            foreach ($request->payments as $paymentData) {
+                $validator = Validator::make($paymentData, [
+                    'customer_id' => 'required|exists:customers,id',
+                    'amount' => 'required|numeric|min:0',
+                    'payment_date' => 'required|date',
+                    'account_no' => 'required|string|max:255',
+                ]);
+                
+                if (!$validator->fails()) {
+                    Payment::create($paymentData);
+                    $successCount++;
+                }
+            }
+            
+            return redirect()->route('admin.payments.index')
+                ->with('success', $successCount . ' payment(s) created successfully.');
+        } else {
+            // Single payment (legacy support)
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'required|exists:customers,id',
+                'amount' => 'required|numeric|min:0',
+                'payment_date' => 'required|date',
+                'account_no' => 'required|string|max:255',
+            ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+            Payment::create($request->all());
+
+            return redirect()->route('admin.payments.index')
+                ->with('success', 'Payment created successfully.');
         }
-
-        Payment::create($request->all());
-
-        return redirect()->route('admin.payments.index')
-            ->with('success', 'Payment created successfully.');
     }
 
     public function show(Payment $payment)
