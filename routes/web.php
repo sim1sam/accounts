@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\CancellationController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\Admin\LedgerReportController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -108,6 +109,9 @@ Route::middleware(['auth'])->group(function () {
     // Transaction Routes
     Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
     Route::get('/admin/transactions/{transaction}', [TransactionController::class, 'show'])->name('admin.transactions.show');
+    
+    // Ledger Report Routes
+    Route::get('/admin/reports/ledger', [LedgerReportController::class, 'index'])->name('admin.reports.ledger');
 });
 
 // Redirect /home to admin dashboard for authenticated users

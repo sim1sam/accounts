@@ -395,6 +395,12 @@ return [
             'icon' => 'fas fa-fw fa-exchange-alt',
             'active' => ['admin/transactions*'],
         ],
+        [
+            'text' => 'Ledger Report',
+            'url' => 'admin/reports/ledger',
+            'icon' => 'fas fa-fw fa-file-invoice',
+            'active' => ['admin/reports/ledger*'],
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 
