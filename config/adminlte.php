@@ -300,34 +300,25 @@ return [
 
     'menu' => [
         // Navbar items:
-        [
-            'type' => 'navbar-search',
-            'text' => 'search',
-            'topnav_right' => true,
-        ],
+        // Search bar removed as requested
         [
             'type' => 'fullscreen-widget',
             'topnav_right' => true,
         ],
         [
             'text' => 'Dashboard',
-            'url'  => 'admin/dashboard',
+            'url'  => 'admin',
             'icon' => 'fas fa-fw fa-tachometer-alt',
-            'active' => ['admin/dashboard*'],
+            'active' => ['admin', 'admin/*'],
         ],
 
         // Sidebar items:
-        [
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
-        ],
         [
             'text' => 'blog',
             'url' => 'admin/blog',
             'can' => 'manage-blog',
         ],
-        // Pages menu removed as requested
-        ['header' => 'account_settings'],
+        // Pages menu and account_settings header removed as requested
         [
             'text' => 'Settings',
             'url' => '#',
