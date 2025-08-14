@@ -8,9 +8,9 @@ class Refund extends Model
 {
     protected $fillable = [
         'customer_id',
+        'bank_id',
         'refund_amount',
         'refund_date',
-        'account',
         'remarks'
     ];
 
@@ -21,5 +21,10 @@ class Refund extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+    
+    public function bank()
+    {
+        return $this->belongsTo(Bank::class);
     }
 }

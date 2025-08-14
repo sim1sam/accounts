@@ -25,7 +25,7 @@
                         <th>Customer</th>
                         <th>Amount</th>
                         <th>Date</th>
-                        <th>Account</th>
+                        <th>Bank</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -36,7 +36,7 @@
                             <td>{{ $refund->customer->name }} ({{ $refund->customer->mobile }})</td>
                             <td>{{ $refund->refund_amount }}</td>
                             <td>{{ $refund->refund_date->format('Y-m-d') }}</td>
-                            <td>{{ $refund->account ?? 'N/A' }}</td>
+                            <td>{{ $refund->bank ? $refund->bank->name . ' (' . $refund->bank->account_number . ')' : 'N/A' }}</td>
                             <td>
                                 <div class="btn-group">
                                     <a href="{{ route('admin.refunds.show', $refund->id) }}" class="btn btn-sm btn-info">

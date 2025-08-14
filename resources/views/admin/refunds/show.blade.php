@@ -47,8 +47,8 @@
                                             <td>{{ $refund->refund_date->format('Y-m-d') }}</td>
                                         </tr>
                                         <tr>
-                                            <th>Account</th>
-                                            <td>{{ $refund->account ?? 'N/A' }}</td>
+                                            <th>Bank</th>
+                                            <td>{{ $refund->bank ? $refund->bank->name . ' (' . $refund->bank->account_number . ')' : 'N/A' }}</td>
                                         </tr>
                                         <tr>
                                             <th>Remarks</th>

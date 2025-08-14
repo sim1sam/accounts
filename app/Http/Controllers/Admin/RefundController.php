@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Refund;
 use App\Models\Customer;
+use App\Models\Bank;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RefundController extends Controller
 {
@@ -14,7 +17,7 @@ class RefundController extends Controller
      */
     public function index()
     {
-        $refunds = Refund::with('customer')->latest()->get();
+        $refunds = Refund::with(['customer', 'bank'])->latest()->get();
         return view('admin.refunds.index', compact('refunds'));
     }
 
@@ -24,7 +27,8 @@ class RefundController extends Controller
     public function create()
     {
         $customers = Customer::all();
-        return view('admin.refunds.create', compact('customers'));
+        $banks = Bank::where('is_active', true)->get();
+        return view('admin.refunds.create', compact('customers', 'banks'));
     }
 
     /**
@@ -32,30 +36,70 @@ class RefundController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug the request data
+        \Log::info('Refund store method called');
+        \Log::info('Request data:', $request->all());
+        
         // Check if we're dealing with multiple refunds
         if ($request->has('refunds')) {
             $refundsData = $request->refunds;
             $count = 0;
             
-            foreach ($refundsData as $refundData) {
+            \Log::info('Processing multiple refunds:', ['count' => count($refundsData)]);
+            
+            foreach ($refundsData as $index => $refundData) {
+                \Log::info('Processing refund entry:', ['index' => $index, 'data' => $refundData]);
+                
                 // Validate each refund entry
                 $validator = validator($refundData, [
                     'customer_id' => 'required|exists:customers,id',
+                    'bank_id' => 'required|exists:banks,id',
                     'refund_amount' => 'required|numeric|min:0',
                     'refund_date' => 'required|date',
-                    'account' => 'nullable|string',
                     'remarks' => 'nullable|string'
                 ]);
                 
                 if ($validator->fails()) {
+                    \Log::error('Validation failed:', ['errors' => $validator->errors()->toArray()]);
                     return back()
                         ->withErrors($validator)
                         ->withInput();
                 }
                 
-                // Create the refund
-                Refund::create($refundData);
-                $count++;
+                // Begin transaction
+                DB::beginTransaction();
+                try {
+                    // Create the refund
+                    $refund = Refund::create($refundData);
+                    
+                    // Get bank and decrease balance
+                    $bank = Bank::findOrFail($refundData['bank_id']);
+                    if (!$bank->decreaseBalance($refundData['refund_amount'])) {
+                        throw new \Exception('Insufficient balance in bank account');
+                    }
+                    
+                    // Get customer details for transaction description
+                    $customer = Customer::findOrFail($refundData['customer_id']);
+                    
+                    // Create transaction record
+                    Transaction::create([
+                        'payment_id' => null,
+                        'refund_id' => $refund->id,
+                        'bank_id' => $bank->id,
+                        'amount' => $refundData['refund_amount'],
+                        'type' => 'debit',
+                        'description' => 'Refund issued to ' . $customer->name . ' (' . $customer->mobile . ')',
+                        'transaction_date' => $refundData['refund_date'],
+                    ]);
+                    
+                    DB::commit();
+                    $count++;
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return back()
+                        ->withErrors(['error' => $e->getMessage()])
+                        ->withInput();
+                }
             }
             
             return redirect()->route('admin.refunds.index')
@@ -64,16 +108,46 @@ class RefundController extends Controller
             // Handle single refund (backward compatibility)
             $request->validate([
                 'customer_id' => 'required|exists:customers,id',
+                'bank_id' => 'required|exists:banks,id',
                 'refund_amount' => 'required|numeric|min:0',
                 'refund_date' => 'required|date',
-                'account' => 'nullable|string',
                 'remarks' => 'nullable|string'
             ]);
 
-            Refund::create($request->all());
-
-            return redirect()->route('admin.refunds.index')
-                ->with('success', 'Refund created successfully.');
+            DB::beginTransaction();
+            try {
+                // Create refund
+                $refund = Refund::create($request->all());
+                
+                // Get bank and decrease balance
+                $bank = Bank::findOrFail($request->bank_id);
+                if (!$bank->decreaseBalance($request->refund_amount)) {
+                    throw new \Exception('Insufficient balance in bank account');
+                }
+                
+                // Get customer details for transaction description
+                $customer = Customer::findOrFail($request->customer_id);
+                
+                // Create transaction record
+                Transaction::create([
+                    'payment_id' => null,
+                    'refund_id' => $refund->id,
+                    'bank_id' => $bank->id,
+                    'amount' => $request->refund_amount,
+                    'type' => 'debit',
+                    'description' => 'Refund issued to ' . $customer->name . ' (' . $customer->mobile . ')',
+                    'transaction_date' => $request->refund_date,
+                ]);
+                
+                DB::commit();
+                return redirect()->route('admin.refunds.index')
+                    ->with('success', 'Refund created successfully.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()
+                    ->withErrors(['error' => $e->getMessage()])
+                    ->withInput();
+            }
         }
     }
 
@@ -82,7 +156,7 @@ class RefundController extends Controller
      */
     public function show(string $id)
     {
-        $refund = Refund::with('customer')->findOrFail($id);
+        $refund = Refund::with(['customer', 'bank'])->findOrFail($id);
         return view('admin.refunds.show', compact('refund'));
     }
 
@@ -93,7 +167,8 @@ class RefundController extends Controller
     {
         $refund = Refund::findOrFail($id);
         $customers = Customer::all();
-        return view('admin.refunds.edit', compact('refund', 'customers'));
+        $banks = Bank::where('is_active', true)->get();
+        return view('admin.refunds.edit', compact('refund', 'customers', 'banks'));
     }
 
     /**
@@ -103,17 +178,58 @@ class RefundController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'bank_id' => 'required|exists:banks,id',
             'refund_amount' => 'required|numeric|min:0',
             'refund_date' => 'required|date',
-            'account' => 'nullable|string',
             'remarks' => 'nullable|string'
         ]);
 
         $refund = Refund::findOrFail($id);
-        $refund->update($request->all());
-
-        return redirect()->route('admin.refunds.index')
-            ->with('success', 'Refund updated successfully.');
+        
+        // Begin transaction
+        DB::beginTransaction();
+        try {
+            // Find related transaction if it exists
+            $transaction = Transaction::where('refund_id', $refund->id)->first();
+            
+            // If amount or bank changed, update bank balances
+            if ($refund->refund_amount != $request->refund_amount || $refund->bank_id != $request->bank_id) {
+                // Restore old bank balance if bank exists
+                if ($refund->bank_id) {
+                    $oldBank = Bank::findOrFail($refund->bank_id);
+                    $oldBank->increaseBalance($refund->refund_amount);
+                }
+                
+                // Decrease new bank balance
+                $newBank = Bank::findOrFail($request->bank_id);
+                if (!$newBank->decreaseBalance($request->refund_amount)) {
+                    throw new \Exception('Insufficient balance in bank account');
+                }
+                
+                // Update transaction if it exists
+                if ($transaction) {
+                    $customer = Customer::findOrFail($request->customer_id);
+                    $transaction->update([
+                        'bank_id' => $request->bank_id,
+                        'amount' => $request->refund_amount,
+                        'description' => 'Refund issued to ' . $customer->name . ' (' . $customer->mobile . ')',
+                        'transaction_date' => $request->refund_date,
+                    ]);
+                }
+            }
+            
+            // Update refund
+            $refund->update($request->all());
+            
+            DB::commit();
+            return redirect()->route('admin.refunds.index')
+                ->with('success', 'Refund updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput();
+        }
     }
 
     /**

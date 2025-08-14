@@ -77,9 +77,16 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="account">Account</label>
-                                    <input type="text" class="form-control @error('account') is-invalid @enderror" id="account" name="account" value="{{ old('account', $refund->account) }}" placeholder="Enter account">
-                                    @error('account')
+                                    <label for="bank_id">Bank</label>
+                                    <select class="form-control @error('bank_id') is-invalid @enderror" id="bank_id" name="bank_id" required>
+                                        <option value="">-- Select Bank --</option>
+                                        @foreach($banks as $bank)
+                                            <option value="{{ $bank->id }}" {{ old('bank_id', $refund->bank_id) == $bank->id ? 'selected' : '' }}>
+                                                {{ $bank->name }} - {{ $bank->account_number }} (Balance: {{ number_format($bank->current_balance, 2) }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('bank_id')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
                                         </span>

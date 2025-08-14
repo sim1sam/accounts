@@ -80,9 +80,16 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="account">Account</label>
-                                    <input type="text" class="form-control @error('refunds.0.account') is-invalid @enderror" id="account_0" name="refunds[0][account]" value="{{ old('refunds.0.account') }}" placeholder="Enter account">
-                                    @error('account')
+                                    <label for="bank_id">Bank</label>
+                                    <select class="form-control @error('refunds.0.bank_id') is-invalid @enderror" id="bank_id_0" name="refunds[0][bank_id]" required>
+                                        <option value="">-- Select Bank --</option>
+                                        @foreach($banks as $bank)
+                                            <option value="{{ $bank->id }}" {{ old('refunds.0.bank_id') == $bank->id ? 'selected' : '' }}>
+                                                {{ $bank->name }} - {{ $bank->account_number }} (Balance: {{ number_format($bank->current_balance, 2) }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('bank_id')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
                                         </span>
@@ -209,6 +216,52 @@
             
             // Fix dropdown initialization
             $('.dropdown-toggle').dropdown();
+            
+            // Form submission handling
+            $('#refundForm').on('submit', function(e) {
+                console.log('Form submission attempted');
+                
+                // Collect form data for debugging
+                let formData = {};
+                $(this).find('input, select, textarea').each(function() {
+                    let name = $(this).attr('name');
+                    let value = $(this).val();
+                    if (name) {
+                        console.log('Field:', name, 'Value:', value);
+                        formData[name] = value;
+                    }
+                });
+                
+                console.log('Complete form data:', formData);
+                
+                // Check for any validation errors
+                let hasErrors = false;
+                $('select[required], input[required]').each(function() {
+                    if (!$(this).val()) {
+                        console.log('Missing required field:', $(this).attr('id'), $(this).attr('name'));
+                        $(this).addClass('is-invalid');
+                        hasErrors = true;
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+                
+                if (hasErrors) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+                
+                // Ensure the form is properly submitted
+                console.log('Form submission proceeding');
+                return true; // Allow the form to submit
+            });
+            
+            // Add click handler for submit button to ensure form submission
+            $('#submitBtn').on('click', function() {
+                console.log('Submit button clicked');
+                $('#refundForm').submit();
+            });
             
             // Handle customer search for initial entry
             $(document).on('keyup', '.customer-search', function(e) {
@@ -358,8 +411,15 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="account_${index}">Account</label>
-                                <input type="text" class="form-control" id="account_${index}" name="refunds[${index}][account]" placeholder="Enter account">
+                                <label for="bank_id_${index}">Bank</label>
+                                <select class="form-control" id="bank_id_${index}" name="refunds[${index}][bank_id]" required>
+                                    <option value="">-- Select Bank --</option>
+                                    @foreach($banks as $bank)
+                                        <option value="{{ $bank->id }}">
+                                            {{ $bank->name }} - {{ $bank->account_number }} (Balance: {{ number_format($bank->current_balance, 2) }})
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                         
