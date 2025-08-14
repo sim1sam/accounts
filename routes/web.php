@@ -12,6 +12,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\Admin\CancellationController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\TransactionController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -103,6 +104,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/banks/{bank}', [BankController::class, 'update'])->name('admin.banks.update');
     Route::delete('/admin/banks/{bank}', [BankController::class, 'destroy'])->name('admin.banks.destroy');
     Route::post('/admin/banks/{bank}/adjust-balance', [BankController::class, 'adjustBalance'])->name('admin.banks.adjust-balance');
+    
+    // Transaction Routes
+    Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
+    Route::get('/admin/transactions/{transaction}', [TransactionController::class, 'show'])->name('admin.transactions.show');
 });
 
 // Redirect /home to admin dashboard for authenticated users

@@ -389,6 +389,12 @@ return [
             'icon' => 'fas fa-fw fa-university',
             'active' => ['admin/banks*'],
         ],
+        [
+            'text' => 'Transactions',
+            'url' => 'admin/transactions',
+            'icon' => 'fas fa-fw fa-exchange-alt',
+            'active' => ['admin/transactions*'],
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 

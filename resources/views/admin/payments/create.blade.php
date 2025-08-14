@@ -73,8 +73,13 @@
                                     
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="account_no_0">Account No</label>
-                                            <input type="text" class="form-control" id="account_no_0" name="payments[0][account_no]" placeholder="Enter account number" required>
+                                            <label for="bank_id_0">Bank</label>
+                                            <select class="form-control" id="bank_id_0" name="payments[0][bank_id]" required>
+                                                <option value="">Select Bank</option>
+                                                @foreach($banks as $bank)
+                                                    <option value="{{ $bank->id }}">{{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }})</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -300,8 +305,13 @@
                             
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="account_no_${entryCounter}">Account No</label>
-                                    <input type="text" class="form-control" id="account_no_${entryCounter}" name="payments[${entryCounter}][account_no]" placeholder="Enter account number" required>
+                                    <label for="bank_id_${entryCounter}">Bank</label>
+                                    <select class="form-control" id="bank_id_${entryCounter}" name="payments[${entryCounter}][bank_id]" required>
+                                        <option value="">Select Bank</option>
+                                        @foreach($banks as $bank)
+                                            <option value="{{ $bank->id }}">{{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }})</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>

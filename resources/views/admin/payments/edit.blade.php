@@ -86,9 +86,14 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="account_no">Account No</label>
-                                    <input type="text" class="form-control @error('account_no') is-invalid @enderror" id="account_no" name="account_no" value="{{ old('account_no', $payment->account_no) }}" placeholder="Enter account number" required>
-                                    @error('account_no')
+                                    <label for="bank_id">Bank</label>
+                                    <select class="form-control @error('bank_id') is-invalid @enderror" id="bank_id" name="bank_id" required>
+                                        <option value="">Select Bank</option>
+                                        @foreach($banks as $bank)
+                                            <option value="{{ $bank->id }}" {{ old('bank_id', $payment->bank_id) == $bank->id ? 'selected' : '' }}>{{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }})</option>
+                                        @endforeach
+                                    </select>
+                                    @error('bank_id')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
                                         </span>

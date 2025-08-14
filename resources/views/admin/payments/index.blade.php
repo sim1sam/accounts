@@ -31,7 +31,7 @@
                                 <th>Customer</th>
                                 <th>Amount</th>
                                 <th>Payment Date</th>
-                                <th>Account No</th>
+                                <th>Bank</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -48,7 +48,13 @@
                                     </td>
                                     <td>{{ number_format($payment->amount, 2) }}</td>
                                     <td>{{ $payment->payment_date->format('Y-m-d') }}</td>
-                                    <td>{{ $payment->account_no }}</td>
+                                    <td>
+                                        @if($payment->bank)
+                                            {{ $payment->bank->name }}
+                                        @else
+                                            Bank not found
+                                        @endif
+                                    </td>
                                     <td>
                                         <a href="{{ route('admin.payments.show', $payment->id) }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i> View

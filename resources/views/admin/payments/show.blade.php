@@ -51,8 +51,14 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Account No</label>
-                                <p class="form-control-static">{{ $payment->account_no }}</p>
+                                <label>Bank</label>
+                                <p class="form-control-static">
+                                    @if($payment->bank)
+                                        {{ $payment->bank->name }} - {{ $payment->bank->account_name }} ({{ $payment->bank->account_number }})
+                                    @else
+                                        Bank not found
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>

@@ -13,7 +13,7 @@ class Payment extends Model
         'customer_id',
         'amount',
         'payment_date',
-        'account_no',
+        'bank_id',
     ];
     
     protected $casts = [
@@ -24,5 +24,15 @@ class Payment extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+    
+    public function bank()
+    {
+        return $this->belongsTo(Bank::class);
+    }
+    
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }
