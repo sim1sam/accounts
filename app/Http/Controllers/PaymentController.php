@@ -58,13 +58,16 @@ class PaymentController extends Controller
                     $bank = Bank::findOrFail($paymentData['bank_id']);
                     $bank->increaseBalance($paymentData['amount']);
                     
+                    // Get customer details for transaction description
+                    $customer = Customer::findOrFail($paymentData['customer_id']);
+                    
                     // Create transaction record
                     Transaction::create([
                         'payment_id' => $payment->id,
                         'bank_id' => $bank->id,
                         'amount' => $paymentData['amount'],
                         'type' => 'credit',
-                        'description' => 'Payment received from customer ID: ' . $paymentData['customer_id'],
+                        'description' => 'Payment received from ' . $customer->name . ' (' . $customer->mobile . ')',
                         'transaction_date' => $paymentData['payment_date'],
                     ]);
                     
@@ -107,13 +110,16 @@ class PaymentController extends Controller
                 $bank = Bank::findOrFail($request->bank_id);
                 $bank->increaseBalance($request->amount);
                 
+                // Get customer details for transaction description
+                $customer = Customer::findOrFail($request->customer_id);
+                
                 // Create transaction record
                 Transaction::create([
                     'payment_id' => $payment->id,
                     'bank_id' => $bank->id,
                     'amount' => $request->amount,
                     'type' => 'credit',
-                    'description' => 'Payment received from customer ID: ' . $request->customer_id,
+                    'description' => 'Payment received from ' . $customer->name . ' (' . $customer->mobile . ')',
                     'transaction_date' => $request->payment_date,
                 ]);
                 
