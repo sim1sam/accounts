@@ -9,6 +9,7 @@ use App\Models\Bank;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class RefundController extends Controller
 {
@@ -51,7 +52,7 @@ class RefundController extends Controller
                 \Log::info('Processing refund entry:', ['index' => $index, 'data' => $refundData]);
                 
                 // Validate each refund entry
-                $validator = validator($refundData, [
+                $validator = Validator::make($refundData, [
                     'customer_id' => 'required|exists:customers,id',
                     'bank_id' => 'required|exists:banks,id',
                     'refund_amount' => 'required|numeric|min:0',
@@ -62,7 +63,7 @@ class RefundController extends Controller
                 if ($validator->fails()) {
                     \Log::error('Validation failed:', ['errors' => $validator->errors()->toArray()]);
                     return back()
-                        ->withErrors($validator)
+                        ->withErrors($validator->errors())
                         ->withInput();
                 }
                 

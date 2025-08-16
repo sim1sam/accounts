@@ -22,6 +22,20 @@
                                 {{ session('success') }}
                             </div>
                         @endif
+                        @if(session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+                        @if($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         
                         <div id="refund-entries">
                             <!-- Refund entries will be added here -->
@@ -32,14 +46,14 @@
                                 <div class="form-group">
                                     <label for="customer_select">Select Customer</label>
                                     <div class="dropdown">
-                                        <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
-                                            <span id="selectedCustomerText">-- Select Customer --</span>
+                                        <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown_0" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                            <span id="selectedCustomerText_0">-- Select Customer --</span>
                                             <span class="caret float-right mt-1"></span>
                                         </button>
-                                        <div class="dropdown-menu w-100" aria-labelledby="customerDropdown" style="max-height: 300px; overflow-y: auto;">
-                                            <input type="text" class="form-control mb-2 mx-2" id="customer_search" placeholder="Search by mobile number" style="width: 95%;">
+                                        <div class="dropdown-menu w-100" aria-labelledby="customerDropdown_0" style="max-height: 300px; overflow-y: auto;">
+                                            <input type="text" class="form-control mb-2 mx-2 customer-search" id="customer_search_0" placeholder="Search by mobile number" style="width: 95%;">
                                             <div class="dropdown-divider"></div>
-                                            <div id="customerOptions">
+                                            <div id="customerOptions_0">
                                                 @foreach($customers as $customer)
                                                     <a class="dropdown-item customer-option" href="#" data-id="{{ $customer->id }}" data-mobile="{{ $customer->mobile }}" data-name="{{ $customer->name }}">
                                                         {{ $customer->mobile }} - {{ $customer->name }}
@@ -54,13 +68,18 @@
                             
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="refund_amount">Refund Amount</label>
-                                    <input type="number" class="form-control @error('refunds.0.refund_amount') is-invalid @enderror" id="refund_amount_0" name="refunds[0][refund_amount]" value="{{ old('refunds.0.refund_amount') }}" placeholder="Enter refund amount" step="0.01" required>
-                                    @error('refund_amount')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <label for="refund_amount">Refund Amount (BDT)</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">BDT</span>
+                                        </div>
+                                        <input type="number" class="form-control @error('refunds.0.refund_amount') is-invalid @enderror" id="refund_amount_0" name="refunds[0][refund_amount]" value="{{ old('refunds.0.refund_amount') }}" placeholder="Enter amount" step="0.01" required>
+                                        @error('refund_amount')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
                                 </div>
                             </div>
                             
@@ -219,55 +238,155 @@
             
             // Form submission handling
             $('#refundForm').on('submit', function(e) {
+                e.preventDefault(); // Prevent default form submission
                 console.log('Form submission attempted');
                 
-                // Collect form data for debugging
-                let formData = {};
-                $(this).find('input, select, textarea').each(function() {
-                    let name = $(this).attr('name');
-                    let value = $(this).val();
-                    if (name) {
-                        console.log('Field:', name, 'Value:', value);
-                        formData[name] = value;
-                    }
-                });
+                // Count the number of refund entries
+                const entryCount = $('.refund-entry').length;
+                console.log('Number of refund entries:', entryCount);
                 
-                console.log('Complete form data:', formData);
+                // Create an array to hold all refund data
+                let refundsData = [];
                 
-                // Check for any validation errors
-                let hasErrors = false;
-                $('select[required], input[required]').each(function() {
-                    if (!$(this).val()) {
-                        console.log('Missing required field:', $(this).attr('id'), $(this).attr('name'));
-                        $(this).addClass('is-invalid');
-                        hasErrors = true;
+                // Check if all required fields are filled
+                let hasEmptyRequiredFields = false;
+                
+                // Collect data from each refund entry
+                $('.refund-entry').each(function(index) {
+                    const entryId = $(this).data('entry-id');
+                    console.log(`Processing entry #${index+1} (ID: ${entryId})`);
+                    
+                    // Get values for this entry
+                    const customerId = $(`#customer_id_${entryId}`).val();
+                    const bankId = $(`#bank_id_${entryId}`).val();
+                    const refundAmount = $(`#refund_amount_${entryId}`).val();
+                    const refundDate = $(`#refund_date_${entryId}`).val();
+                    const remarks = $(`#remarks_${entryId}`).val();
+                    
+                    console.log(`Entry #${index+1} data:`, {
+                        customer_id: customerId,
+                        bank_id: bankId,
+                        refund_amount: refundAmount,
+                        refund_date: refundDate,
+                        remarks: remarks
+                    });
+                    
+                    // Validate required fields for this entry
+                    if (!customerId) {
+                        console.error(`Missing customer_id for entry #${index+1} (ID: ${entryId})`);
+                        $(`#customerDropdown_${entryId}`).addClass('is-invalid');
+                        hasEmptyRequiredFields = true;
                     } else {
-                        $(this).removeClass('is-invalid');
+                        $(`#customerDropdown_${entryId}`).removeClass('is-invalid');
+                    }
+                    
+                    if (!bankId) {
+                        console.error(`Missing bank_id for entry #${index+1} (ID: ${entryId})`);
+                        $(`#bank_id_${entryId}`).addClass('is-invalid');
+                        hasEmptyRequiredFields = true;
+                    } else {
+                        $(`#bank_id_${entryId}`).removeClass('is-invalid');
+                    }
+                    
+                    if (!refundAmount) {
+                        console.error(`Missing refund_amount for entry #${index+1} (ID: ${entryId})`);
+                        $(`#refund_amount_${entryId}`).addClass('is-invalid');
+                        hasEmptyRequiredFields = true;
+                    } else {
+                        $(`#refund_amount_${entryId}`).removeClass('is-invalid');
+                    }
+                    
+                    if (!refundDate) {
+                        console.error(`Missing refund_date for entry #${index+1} (ID: ${entryId})`);
+                        $(`#refund_date_${entryId}`).addClass('is-invalid');
+                        hasEmptyRequiredFields = true;
+                    } else {
+                        $(`#refund_date_${entryId}`).removeClass('is-invalid');
+                    }
+                    
+                    // Add this entry's data to the refundsData array
+                    if (customerId && bankId && refundAmount && refundDate) {
+                        refundsData.push({
+                            customer_id: customerId,
+                            bank_id: bankId,
+                            refund_amount: refundAmount,
+                            refund_date: refundDate,
+                            remarks: remarks
+                        });
                     }
                 });
                 
-                if (hasErrors) {
-                    e.preventDefault();
+                if (hasEmptyRequiredFields) {
+                    console.error('Form has empty required fields');
                     alert('Please fill in all required fields');
                     return false;
                 }
                 
-                // Ensure the form is properly submitted
-                console.log('Form submission proceeding');
-                return true; // Allow the form to submit
+                console.log('Complete refunds data:', refundsData);
+                
+                if (refundsData.length === 0) {
+                    console.error('No valid refund entries found');
+                    alert('Please add at least one valid refund entry');
+                    return false;
+                }
+                
+                // Create a form data object
+                const formData = new FormData(document.getElementById('refundForm'));
+                
+                // Remove existing refunds inputs to avoid duplicates
+                $('#refundForm').find('input[name^="refunds"]').remove();
+                
+                // Add each refund as a hidden input
+                refundsData.forEach((refund, index) => {
+                    for (const [key, value] of Object.entries(refund)) {
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: `refunds[${index}][${key}]`,
+                            value: value
+                        }).appendTo('#refundForm');
+                    }
+                });
+                
+                // Log the final form data for debugging
+                console.log('Final form structure:');
+                $('#refundForm').find('input[type="hidden"]').each(function() {
+                    console.log($(this).attr('name') + ' = ' + $(this).val());
+                });
+                
+                // Submit the form
+                console.log('Form submission proceeding with refunds data');
+                this.submit();
             });
             
             // Add click handler for submit button to ensure form submission
-            $('#submitBtn').on('click', function() {
+            $('#submitBtn').on('click', function(e) {
+                e.preventDefault();
                 console.log('Submit button clicked');
-                $('#refundForm').submit();
+                $('#refundForm').trigger('submit');
             });
             
-            // Handle customer search for initial entry
+            // Handle customer search for all entries
             $(document).on('keyup', '.customer-search', function(e) {
                 e.stopPropagation();
                 const searchText = $(this).val().toLowerCase();
-                const entryId = $(this).closest('.refund-entry').data('entry-id');
+                
+                // Get the entry ID from the closest refund-entry or from the input ID
+                let entryId = 0;
+                const refundEntry = $(this).closest('.refund-entry');
+                if (refundEntry.length) {
+                    entryId = refundEntry.data('entry-id');
+                } else {
+                    // Try to get entry ID from the input ID (customer_search_X)
+                    const inputId = $(this).attr('id');
+                    if (inputId) {
+                        const idMatch = inputId.match(/customer_search_(\d+)/);
+                        if (idMatch && idMatch[1]) {
+                            entryId = parseInt(idMatch[1]);
+                        }
+                    }
+                }
+                
+                console.log('Searching in entry ID:', entryId);
                 
                 $(`#customerOptions_${entryId} .customer-option`).each(function() {
                     const optionText = $(this).text().toLowerCase();
@@ -290,7 +409,25 @@
                 const customerId = $(this).data('id');
                 const customerMobile = $(this).data('mobile');
                 const customerName = $(this).data('name');
-                const entryId = $(this).closest('.refund-entry').data('entry-id');
+                
+                // Get the entry ID from the closest refund-entry
+                // If we can't find it, default to 0 (first entry)
+                let entryId = 0;
+                const refundEntry = $(this).closest('.refund-entry');
+                if (refundEntry.length) {
+                    entryId = refundEntry.data('entry-id');
+                } else {
+                    // If we can't find the entry ID from the refund-entry, try to get it from the customerOptions div
+                    const customerOptionsDiv = $(this).closest('[id^="customerOptions_"]');
+                    if (customerOptionsDiv.length) {
+                        const idMatch = customerOptionsDiv.attr('id').match(/customerOptions_(\d+)/);
+                        if (idMatch && idMatch[1]) {
+                            entryId = parseInt(idMatch[1]);
+                        }
+                    }
+                }
+                
+                console.log('Selected customer for entry ID:', entryId);
                 
                 // Update the button text and hidden input
                 $(`#selectedCustomerText_${entryId}`).text(customerMobile + ' - ' + customerName);
@@ -340,6 +477,13 @@
                 
                 // Append to the container
                 $('#refund-entries').append(newEntry);
+                
+                // Initialize Select2 for the new dropdowns
+                $(`#customer_id_${entryCounter}, #bank_id_${entryCounter}`).select2({
+                    theme: 'bootstrap4',
+                    placeholder: '-- Select --',
+                    width: '100%'
+                });
                 
                 // Initialize the new dropdown
                 $(`#customerDropdown_${entryCounter}`).dropdown();
@@ -395,8 +539,13 @@
                         
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="refund_amount_${index}">Refund Amount</label>
-                                <input type="number" class="form-control" id="refund_amount_${index}" name="refunds[${index}][refund_amount]" placeholder="Enter refund amount" step="0.01" required>
+                                <label for="refund_amount_${index}">Refund Amount (BDT)</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">BDT</span>
+                                    </div>
+                                    <input type="number" class="form-control" id="refund_amount_${index}" name="refunds[${index}][refund_amount]" placeholder="Enter amount" step="0.01" required>
+                                </div>
                             </div>
                         </div>
                         
@@ -494,18 +643,32 @@
                 </div>
             `);
             
-            // Update IDs for the first entry
-            $('#customer_search').attr('id', 'customer_search_0').addClass('customer-search');
-            $('#customerOptions').attr('id', 'customerOptions_0');
-            $('#customerDropdown').attr('id', 'customerDropdown_0');
-            $('#selectedCustomerText').attr('id', 'selectedCustomerText_0');
-            $('#customerDetails').attr('id', 'customerDetails_0');
-            $('#customerName').attr('id', 'customerName_0');
-            $('#customerMobile').attr('id', 'customerMobile_0');
-            $('#customerEmail').attr('id', 'customerEmail_0');
-            $('#customerAddress').attr('id', 'customerAddress_0');
-            $('#customerDeliveryClass').attr('id', 'customerDeliveryClass_0');
-            $('#customerKAM').attr('id', 'customerKAM_0');
+            // Ensure the first entry has the correct data-entry-id attribute
+            $('.refund-entry').first().attr('data-entry-id', '0');
+            
+            // Make sure the customer search input has the correct class
+            $('#customer_search_0').addClass('customer-search');
+            
+            // Log the structure of the first entry for debugging
+            console.log('First entry structure:', {
+                entryId: $('.refund-entry').first().data('entry-id'),
+                customerId: $('#customer_id_0').val(),
+                customerSearch: $('#customer_search_0').length,
+                customerOptions: $('#customerOptions_0').length,
+                customerDropdown: $('#customerDropdown_0').length
+            });
+            
+            // No need to update these IDs as they're already set correctly in the HTML
+            // $('#customerOptions_0');
+            // $('#customerDropdown_0');
+            // $('#selectedCustomerText_0');
+            // $('#customerDetails_0');
+            // $('#customerName_0');
+            // $('#customerMobile_0');
+            // $('#customerEmail_0');
+            // $('#customerAddress_0');
+            // $('#customerDeliveryClass_0');
+            // $('#customerKAM_0');
         });
     </script>
 @stop
