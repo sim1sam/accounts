@@ -14,6 +14,39 @@ class Currency extends Model
         'is_default',
         'is_active'
     ];
+    
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'is_default' => 'boolean',
+        'is_active' => 'boolean',
+        'conversion_rate' => 'decimal:5',
+    ];
+    
+    /**
+     * Get the is_default attribute
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public function getIsDefaultAttribute($value)
+    {
+        return (bool) $value;
+    }
+    
+    /**
+     * Get the is_active attribute
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public function getIsActiveAttribute($value)
+    {
+        return (bool) $value;
+    }
 
     /**
      * Convert amount from this currency to BDT

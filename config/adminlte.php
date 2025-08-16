@@ -393,6 +393,12 @@ return [
             'active' => ['admin/currencies*'],
         ],
         [
+            'text' => 'Accounts',
+            'url' => 'admin/accounts',
+            'icon' => 'fas fa-fw fa-wallet',
+            'active' => ['admin/accounts*'],
+        ],
+        [
             'text' => 'Transactions',
             'url' => 'admin/transactions',
             'icon' => 'fas fa-fw fa-exchange-alt',

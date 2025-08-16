@@ -46,11 +46,16 @@ class CurrencyController extends Controller
         ]);
 
         // If this is set as default, unset all other defaults
-        if ($request->has('is_default') && $request->is_default) {
+        if ($request->has('is_default')) {
             Currency::where('is_default', true)->update(['is_default' => false]);
         }
-
-        Currency::create($request->all());
+        
+        // Prepare data with proper boolean handling
+        $data = $request->all();
+        $data['is_default'] = $request->has('is_default');
+        $data['is_active'] = $request->has('is_active');
+        
+        Currency::create($data);
 
         return redirect()->route('admin.currencies.index')
             ->with('success', 'Currency created successfully.');
@@ -97,11 +102,16 @@ class CurrencyController extends Controller
         ]);
 
         // If this is set as default, unset all other defaults
-        if ($request->has('is_default') && $request->is_default) {
+        if ($request->has('is_default')) {
             Currency::where('is_default', true)->update(['is_default' => false]);
         }
-
-        $currency->update($request->all());
+        
+        // Prepare data with proper boolean handling
+        $data = $request->all();
+        $data['is_default'] = $request->has('is_default');
+        $data['is_active'] = $request->has('is_active');
+        
+        $currency->update($data);
 
         return redirect()->route('admin.currencies.index')
             ->with('success', 'Currency updated successfully.');
@@ -116,7 +126,7 @@ class CurrencyController extends Controller
     public function destroy(Currency $currency)
     {
         // Don't allow deleting the default currency
-        if ($currency->is_default) {
+        if ($currency->is_default === true) {
             return redirect()->route('admin.currencies.index')
                 ->with('error', 'Default currency cannot be deleted.');
         }
