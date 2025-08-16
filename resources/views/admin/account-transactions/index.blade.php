@@ -62,18 +62,53 @@
                                     </td>
                                     <td>{{ $transaction->description }}</td>
                                     <td>
+                                        @php
+                                            $accountCurrency = $transaction->account->currency;
+                                            $amountInAccountCurrency = $transaction->amount / $accountCurrency->conversion_rate;
+                                            $prefix = $transaction->type === 'expense' ? '-' : '+';
+                                        @endphp
+                                        
                                         @if(strpos($transaction->description, 'pending') !== false)
-                                            <span class="text-warning">+৳ {{ number_format($transaction->amount, 2) }}</span>
+                                            <span class="text-warning">
+                                                +{{ $accountCurrency->symbol }} {{ number_format($amountInAccountCurrency, 2) }}
+                                                @if($accountCurrency->code !== 'BDT')
+                                                    <br><small class="text-muted">+৳ {{ number_format($transaction->amount, 2) }}</small>
+                                                @endif
+                                            </span>
                                         @elseif(strpos($transaction->description, 'paid') !== false)
-                                            <span class="text-danger">-৳ {{ number_format($transaction->amount, 2) }}</span>
+                                            <span class="text-danger">
+                                                -{{ $accountCurrency->symbol }} {{ number_format($amountInAccountCurrency, 2) }}
+                                                @if($accountCurrency->code !== 'BDT')
+                                                    <br><small class="text-muted">-৳ {{ number_format($transaction->amount, 2) }}</small>
+                                                @endif
+                                            </span>
                                         @else
                                             <span class="text-{{ $transaction->type === 'expense' ? 'danger' : 'success' }}">
-                                                {{ $transaction->type === 'expense' ? '-' : '+' }}৳ {{ number_format($transaction->amount, 2) }}
+                                                {{ $prefix }}{{ $accountCurrency->symbol }} {{ number_format($amountInAccountCurrency, 2) }}
+                                                @if($accountCurrency->code !== 'BDT')
+                                                    <br><small class="text-muted">{{ $prefix }}৳ {{ number_format($transaction->amount, 2) }}</small>
+                                                @endif
                                             </span>
                                         @endif
                                     </td>
-                                    <td>৳ {{ number_format($transaction->balance_before, 2) }}</td>
-                                    <td>৳ {{ number_format($transaction->balance_after, 2) }}</td>
+                                    <td>
+                                        @php
+                                            $balanceBeforeInAccountCurrency = $transaction->balance_before / $accountCurrency->conversion_rate;
+                                        @endphp
+                                        {{ $accountCurrency->symbol }} {{ number_format($balanceBeforeInAccountCurrency, 2) }}
+                                        @if($accountCurrency->code !== 'BDT')
+                                            <br><small class="text-muted">৳ {{ number_format($transaction->balance_before, 2) }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @php
+                                            $balanceAfterInAccountCurrency = $transaction->balance_after / $accountCurrency->conversion_rate;
+                                        @endphp
+                                        {{ $accountCurrency->symbol }} {{ number_format($balanceAfterInAccountCurrency, 2) }}
+                                        @if($accountCurrency->code !== 'BDT')
+                                            <br><small class="text-muted">৳ {{ number_format($transaction->balance_after, 2) }}</small>
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
