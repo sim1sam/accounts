@@ -399,6 +399,18 @@ return [
             'active' => ['admin/accounts*'],
         ],
         [
+            'text' => 'Expenses',
+            'url' => 'admin/expenses',
+            'icon' => 'fas fa-fw fa-credit-card',
+            'active' => ['admin/expenses*'],
+        ],
+        [
+            'text' => 'Account History',
+            'url' => 'admin/account-transactions',
+            'icon' => 'fas fa-fw fa-history',
+            'active' => ['admin/account-transactions*'],
+        ],
+        [
             'text' => 'Transactions',
             'url' => 'admin/transactions',
             'icon' => 'fas fa-fw fa-exchange-alt',

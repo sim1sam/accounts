@@ -15,6 +15,8 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\AccountTransactionController;
 use App\Http\Controllers\Admin\LedgerReportController;
 
 Route::get('/', function () {
@@ -130,6 +132,21 @@ Route::middleware(['auth'])->group(function () {
     // Transaction Routes
     Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
     Route::get('/admin/transactions/{transaction}', [TransactionController::class, 'show'])->name('admin.transactions.show');
+    
+    // Expense Routes
+    Route::get('/admin/expenses', [ExpenseController::class, 'index'])->name('admin.expenses.index');
+    Route::get('/admin/expenses/create', [ExpenseController::class, 'create'])->name('admin.expenses.create');
+    Route::post('/admin/expenses', [ExpenseController::class, 'store'])->name('admin.expenses.store');
+    Route::get('/admin/expenses/{expense}', [ExpenseController::class, 'show'])->name('admin.expenses.show');
+    Route::get('/admin/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('admin.expenses.edit');
+    Route::put('/admin/expenses/{expense}', [ExpenseController::class, 'update'])->name('admin.expenses.update');
+    Route::delete('/admin/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('admin.expenses.destroy');
+    Route::get('/admin/expenses/{expense}/payment', [ExpenseController::class, 'showPaymentForm'])->name('admin.expenses.payment');
+    Route::post('/admin/expenses/{expense}/payment', [ExpenseController::class, 'processPayment'])->name('admin.expenses.payment.process');
+    
+    // Account Transaction Routes
+    Route::get('/admin/account-transactions', [AccountTransactionController::class, 'index'])->name('admin.account-transactions.index');
+    Route::get('/admin/accounts/{account}/transactions', [AccountTransactionController::class, 'show'])->name('admin.account-transactions.show');
     
     // Ledger Report Routes
     Route::get('/admin/reports/ledger', [LedgerReportController::class, 'index'])->name('admin.reports.ledger');

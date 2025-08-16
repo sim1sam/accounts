@@ -24,6 +24,9 @@
                 <div class="card-header">
                     <h3 class="card-title">{{ $account->name }}</h3>
                     <div class="card-tools">
+                        <a href="{{ route('admin.account-transactions.show', $account) }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-history"></i> Transaction History
+                        </a>
                         <a href="{{ route('admin.accounts.edit', $account->id) }}" class="btn btn-warning btn-sm">
                             <i class="fas fa-edit"></i> Edit
                         </a>

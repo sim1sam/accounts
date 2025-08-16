@@ -13,6 +13,8 @@ class Transaction extends Model
         'type',
         'description',
         'transaction_date',
+        'reference_type',
+        'reference_id',
     ];
     
     protected $casts = [
@@ -28,5 +30,13 @@ class Transaction extends Model
     public function bank()
     {
         return $this->belongsTo(Bank::class);
+    }
+
+    /**
+     * Get the related reference model (e.g., Payment, Expense).
+     */
+    public function reference()
+    {
+        return $this->morphTo('reference');
     }
 }
