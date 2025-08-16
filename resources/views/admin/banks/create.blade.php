@@ -59,8 +59,28 @@
                     
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label for="currency_id">Currency <span class="text-danger">*</span></label>
+                            <select name="currency_id" id="currency_id" class="form-control @error('currency_id') is-invalid @enderror" required>
+                                <option value="">Select Currency</option>
+                                @foreach(\App\Models\Currency::all() as $currency)
+                                    <option value="{{ $currency->id }}" data-rate="{{ $currency->conversion_rate }}" {{ old('currency_id') == $currency->id ? 'selected' : '' }}>
+                                        {{ $currency->code }} ({{ $currency->symbol }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('currency_id')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
                             <label for="initial_balance">Initial Balance <span class="text-danger">*</span></label>
                             <input type="number" name="initial_balance" id="initial_balance" class="form-control @error('initial_balance') is-invalid @enderror" value="{{ old('initial_balance', 0) }}" step="0.01" min="0" required>
+                            <small class="form-text text-muted" id="balance_in_bdt"></small>
                             @error('initial_balance')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -86,7 +106,37 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            // Any JavaScript initialization if needed
+            // Calculate BDT equivalent when currency or amount changes
+            function updateBDTAmount() {
+                const amount = parseFloat($('#initial_balance').val()) || 0;
+                const selectedOption = $('#currency_id option:selected');
+                const rate = parseFloat(selectedOption.data('rate')) || 1;
+                const currencyCode = selectedOption.text().split(' ')[0] || '';
+                
+                if (currencyCode && currencyCode !== 'BDT') {
+                    const amountInBDT = amount * rate;
+                    $('#balance_in_bdt').html(`Equivalent in BDT: ৳ ${amountInBDT.toFixed(2)}`);
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'amount_in_bdt',
+                        value: amountInBDT.toFixed(2)
+                    }).appendTo('form');
+                } else if (currencyCode === 'BDT') {
+                    $('#balance_in_bdt').html('');
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'amount_in_bdt',
+                        value: amount.toFixed(2)
+                    }).appendTo('form');
+                } else {
+                    $('#balance_in_bdt').html('');
+                }
+            }
+            
+            $('#currency_id, #initial_balance').on('change keyup', updateBDTAmount);
+            
+            // Initial calculation
+            updateBDTAmount();
         });
     </script>
 @stop

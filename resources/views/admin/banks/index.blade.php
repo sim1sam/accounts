@@ -24,6 +24,7 @@
                         <th>Account Name</th>
                         <th>Account Number</th>
                         <th>Branch</th>
+                        <th>Currency</th>
                         <th>Initial Balance</th>
                         <th>Current Balance</th>
                         <th>Status</th>
@@ -38,8 +39,23 @@
                             <td>{{ $bank->account_name ?? 'N/A' }}</td>
                             <td>{{ $bank->account_number }}</td>
                             <td>{{ $bank->branch ?? 'N/A' }}</td>
-                            <td>{{ number_format($bank->initial_balance, 2) }}</td>
-                            <td>{{ number_format($bank->current_balance, 2) }}</td>
+                            <td>{{ $bank->currency->code ?? 'BDT' }}</td>
+                            <td>
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->initial_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->initial_balance * ($bank->currency->conversion_rate ?? 1), 2) }}</small>
+                                @else
+                                    ৳ {{ number_format($bank->initial_balance, 2) }}
+                                @endif
+                            </td>
+                            <td>
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->current_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->amount_in_bdt ?? ($bank->current_balance * ($bank->currency->conversion_rate ?? 1)), 2) }}</small>
+                                @else
+                                    ৳ {{ number_format($bank->current_balance, 2) }}
+                                @endif
+                            </td>
                             <td>
                                 @if($bank->is_active)
                                     <span class="badge badge-success">Active</span>

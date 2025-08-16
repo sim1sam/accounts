@@ -59,6 +59,25 @@
                     
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label for="currency_id">Currency <span class="text-danger">*</span></label>
+                            <select name="currency_id" id="currency_id" class="form-control @error('currency_id') is-invalid @enderror" required>
+                                <option value="">Select Currency</option>
+                                @foreach(\App\Models\Currency::all() as $currency)
+                                    <option value="{{ $currency->id }}" data-rate="{{ $currency->conversion_rate }}" {{ old('currency_id', $bank->currency_id) == $currency->id ? 'selected' : '' }}>
+                                        {{ $currency->code }} ({{ $currency->symbol }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('currency_id')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
                             <div class="custom-control custom-switch">
                                 <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" {{ old('is_active', $bank->is_active) ? 'checked' : '' }}>
@@ -72,7 +91,14 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Initial Balance</label>
-                            <p class="form-control-static">{{ number_format($bank->initial_balance, 2) }}</p>
+                            <p class="form-control-static">
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->initial_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->initial_balance * ($bank->currency->conversion_rate ?? 1), 2) }} (BDT)</small>
+                                @else
+                                    ৳ {{ number_format($bank->initial_balance, 2) }}
+                                @endif
+                            </p>
                             <small class="text-muted">Initial balance cannot be changed after creation.</small>
                         </div>
                     </div>
@@ -80,7 +106,14 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Current Balance</label>
-                            <p class="form-control-static">{{ number_format($bank->current_balance, 2) }}</p>
+                            <p class="form-control-static">
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->current_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->amount_in_bdt ?? ($bank->current_balance * ($bank->currency->conversion_rate ?? 1)), 2) }} (BDT)</small>
+                                @else
+                                    ৳ {{ number_format($bank->current_balance, 2) }}
+                                @endif
+                            </p>
                             <small class="text-muted">Use the balance adjustment feature to change the current balance.</small>
                         </div>
                     </div>
@@ -104,7 +137,18 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            // Any JavaScript initialization if needed
+            // Calculate BDT equivalent when currency changes
+            function updateCurrencyInfo() {
+                const selectedOption = $('#currency_id option:selected');
+                const currencyCode = selectedOption.text().split(' ')[0] || '';
+                
+                // Update display of balances when currency changes
+                if (currencyCode) {
+                    console.log('Currency changed to: ' + currencyCode);
+                }
+            }
+            
+            $('#currency_id').on('change', updateCurrencyInfo);
         });
     </script>
 @stop

@@ -45,12 +45,32 @@
                             <td>{{ $bank->branch ?? 'N/A' }}</td>
                         </tr>
                         <tr>
+                            <th>Currency</th>
+                            <td>{{ $bank->currency->code ?? 'BDT' }} ({{ $bank->currency->symbol ?? '৳' }})</td>
+                        </tr>
+                        <tr>
                             <th>Initial Balance</th>
-                            <td>{{ number_format($bank->initial_balance, 2) }}</td>
+                            <td>
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->initial_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->initial_balance * ($bank->currency->conversion_rate ?? 1), 2) }} (BDT)</small>
+                                @else
+                                    ৳ {{ number_format($bank->initial_balance, 2) }}
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <th>Current Balance</th>
-                            <td><strong>{{ number_format($bank->current_balance, 2) }}</strong></td>
+                            <td>
+                                <strong>
+                                @if($bank->currency && $bank->currency->code != 'BDT')
+                                    {{ $bank->currency->symbol }} {{ number_format($bank->current_balance, 2) }}
+                                    <small class="text-muted d-block">৳ {{ number_format($bank->amount_in_bdt ?? ($bank->current_balance * ($bank->currency->conversion_rate ?? 1)), 2) }} (BDT)</small>
+                                @else
+                                    ৳ {{ number_format($bank->current_balance, 2) }}
+                                @endif
+                                </strong>
+                            </td>
                         </tr>
                         <tr>
                             <th>Status</th>
@@ -86,7 +106,19 @@
                         
                         <div class="form-group">
                             <label for="amount">Amount <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" step="0.01" min="0.01" required>
+                            <div class="input-group">
+                                @if($bank->currency)
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">{{ $bank->currency->symbol }}</span>
+                                    </div>
+                                @else
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">৳</span>
+                                    </div>
+                                @endif
+                                <input type="number" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" step="0.01" min="0.01" required>
+                            </div>
+                            <small class="form-text text-muted" id="amount_in_bdt"></small>
                             @error('amount')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -123,7 +155,33 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            // Any JavaScript initialization if needed
+            // Calculate BDT equivalent when amount changes
+            function updateBDTAmount() {
+                const amount = parseFloat($('#amount').val()) || 0;
+                @if($bank->currency && $bank->currency->code != 'BDT')
+                const rate = {{ $bank->currency->conversion_rate ?? 1 }};
+                const currencySymbol = '{{ $bank->currency->symbol }}';
+                const amountInBDT = amount * rate;
+                $('#amount_in_bdt').html(`Equivalent in BDT: ৳ ${amountInBDT.toFixed(2)}`);
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'amount_in_bdt',
+                    value: amountInBDT.toFixed(2)
+                }).appendTo('form');
+                @else
+                $('#amount_in_bdt').html('');
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'amount_in_bdt',
+                    value: amount.toFixed(2)
+                }).appendTo('form');
+                @endif
+            }
+            
+            $('#amount').on('change keyup', updateBDTAmount);
+            
+            // Initial calculation
+            updateBDTAmount();
         });
     </script>
 @stop
