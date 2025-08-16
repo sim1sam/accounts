@@ -60,7 +60,8 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {{ $bank->is_active ? 'checked' : '' }}>
+                                <input type="hidden" name="is_active" value="0">
+                                <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" {{ old('is_active', $bank->is_active) ? 'checked' : '' }}>
                                 <label class="custom-control-label" for="is_active">Active</label>
                             </div>
                         </div>

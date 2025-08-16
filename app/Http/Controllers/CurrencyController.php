@@ -41,8 +41,8 @@ class CurrencyController extends Controller
             'code' => 'required|string|max:3|unique:currencies',
             'symbol' => 'required|string|max:10',
             'conversion_rate' => 'required|numeric|min:0',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
+            'is_default' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         // If this is set as default, unset all other defaults
@@ -97,8 +97,8 @@ class CurrencyController extends Controller
             'code' => 'required|string|max:3|unique:currencies,code,' . $currency->id,
             'symbol' => 'required|string|max:10',
             'conversion_rate' => 'required|numeric|min:0',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
+            'is_default' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         // If this is set as default, unset all other defaults

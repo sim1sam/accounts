@@ -87,7 +87,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input" id="is_default" name="is_default" {{ old('is_default', $currency->is_default) ? 'checked' : '' }}>
+                                        <input type="hidden" name="is_default" value="0">
+                                        <input type="checkbox" class="custom-control-input" id="is_default" name="is_default" value="1" {{ old('is_default', $currency->is_default) ? 'checked' : '' }}>
                                         <label class="custom-control-label" for="is_default">Set as Default Currency</label>
                                     </div>
                                     <small class="form-text text-muted">If checked, this will be set as the default currency for the system.</small>
@@ -96,7 +97,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {{ old('is_active', $currency->is_active) ? 'checked' : '' }}>
+                                        <input type="hidden" name="is_active" value="0">
+                                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" {{ old('is_active', $currency->is_active) ? 'checked' : '' }}>
                                         <label class="custom-control-label" for="is_active">Active</label>
                                     </div>
                                     <small class="form-text text-muted">If unchecked, this currency will not be available for use.</small>

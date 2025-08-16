@@ -76,7 +76,7 @@ class BankController extends Controller
             'account_name' => 'nullable|string|max:255',
             'account_number' => 'required|string|max:255|unique:banks,account_number,' . $bank->id,
             'branch' => 'nullable|string|max:255',
-            'is_active' => 'sometimes|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
         
         $bank->update([
