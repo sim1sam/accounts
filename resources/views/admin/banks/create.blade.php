@@ -44,9 +44,7 @@
                             @enderror
                         </div>
                     </div>
-                </div>
-                
-                <div class="row">
+                    
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="branch">Branch</label>
@@ -56,11 +54,13 @@
                             @enderror
                         </div>
                     </div>
-                    
+                </div>
+                
+                <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="currency_id">Currency <span class="text-danger">*</span></label>
-                            <select name="currency_id" id="currency_id" class="form-control @error('currency_id') is-invalid @enderror" required>
+                            <select name="currency_id" id="currency_id" class="form-control select2 @error('currency_id') is-invalid @enderror" required>
                                 <option value="">Select Currency</option>
                                 @foreach(\App\Models\Currency::all() as $currency)
                                     <option value="{{ $currency->id }}" data-rate="{{ $currency->conversion_rate }}" {{ old('currency_id') == $currency->id ? 'selected' : '' }}>
@@ -73,13 +73,16 @@
                             @enderror
                         </div>
                     </div>
-                </div>
-                
-                <div class="row">
+                    
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="initial_balance">Initial Balance <span class="text-danger">*</span></label>
-                            <input type="number" name="initial_balance" id="initial_balance" class="form-control @error('initial_balance') is-invalid @enderror" value="{{ old('initial_balance', 0) }}" step="0.01" min="0" required>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="currency-symbol"></span>
+                                </div>
+                                <input type="number" name="initial_balance" id="initial_balance" class="form-control @error('initial_balance') is-invalid @enderror" value="{{ old('initial_balance', 0) }}" step="0.01" min="0" required>
+                            </div>
                             <small class="form-text text-muted" id="balance_in_bdt"></small>
                             @error('initial_balance')
                                 <span class="invalid-feedback">{{ $message }}</span>
@@ -87,6 +90,7 @@
                         </div>
                     </div>
                 </div>
+                
                 
                 <div class="row">
                     <div class="col-12 text-center mt-4">
@@ -101,21 +105,46 @@
 
 @section('css')
     <link rel="stylesheet" href="/css/admin_custom.css">
+    <style>
+        .input-group-text {
+            min-width: 40px;
+            justify-content: center;
+        }
+        #balance_in_bdt {
+            font-weight: 500;
+            color: #6c757d;
+            margin-top: 5px;
+            display: block;
+        }
+    </style>
 @stop
 
 @section('js')
     <script>
         $(document).ready(function() {
+            // Initialize select2 for better dropdown experience
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+            
             // Calculate BDT equivalent when currency or amount changes
             function updateBDTAmount() {
                 const amount = parseFloat($('#initial_balance').val()) || 0;
                 const selectedOption = $('#currency_id option:selected');
                 const rate = parseFloat(selectedOption.data('rate')) || 1;
                 const currencyCode = selectedOption.text().split(' ')[0] || '';
+                const currencySymbol = selectedOption.text().match(/\((.*?)\)/)?.[1] || '';
+                
+                // Update currency symbol in input group
+                $('#currency-symbol').text(currencySymbol);
                 
                 if (currencyCode && currencyCode !== 'BDT') {
                     const amountInBDT = amount * rate;
                     $('#balance_in_bdt').html(`Equivalent in BDT: ৳ ${amountInBDT.toFixed(2)}`);
+                    
+                    // Remove any existing hidden input before adding a new one
+                    $('input[name="amount_in_bdt"]').remove();
                     $('<input>').attr({
                         type: 'hidden',
                         name: 'amount_in_bdt',
@@ -123,6 +152,9 @@
                     }).appendTo('form');
                 } else if (currencyCode === 'BDT') {
                     $('#balance_in_bdt').html('');
+                    
+                    // Remove any existing hidden input before adding a new one
+                    $('input[name="amount_in_bdt"]').remove();
                     $('<input>').attr({
                         type: 'hidden',
                         name: 'amount_in_bdt',
@@ -130,10 +162,12 @@
                     }).appendTo('form');
                 } else {
                     $('#balance_in_bdt').html('');
+                    $('input[name="amount_in_bdt"]').remove();
                 }
             }
             
-            $('#currency_id, #initial_balance').on('change keyup', updateBDTAmount);
+            $('#currency_id').on('change', updateBDTAmount);
+            $('#initial_balance').on('input change', updateBDTAmount);
             
             // Initial calculation
             updateBDTAmount();
