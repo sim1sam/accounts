@@ -85,19 +85,16 @@
                 </div>
                 <div class="card-body">
                     <dl class="row">
-                        <dt class="col-6">Purpose:</dt>
-                        <dd class="col-6">{{ $expense->purpose }}</dd>
+                        <dt class="col-6">Account:</dt>
+                        <dd class="col-6">{{ $expense->account->name }}</dd>
 
                         <dt class="col-6">Amount:</dt>
                         <dd class="col-6">
-                            {{ $expense->currency->symbol }} {{ number_format($expense->amount, 2) }}
-                            @if($expense->currency->code !== 'BDT')
+                            {{ $expense->account->currency->symbol }} {{ number_format($expense->amount, 2) }}
+                            @if($expense->account->currency->code !== 'BDT')
                                 <br><small class="text-muted">৳ {{ number_format($expense->amount_in_bdt, 2) }}</small>
                             @endif
                         </dd>
-
-                        <dt class="col-6">Account:</dt>
-                        <dd class="col-6">{{ $expense->account->name }}</dd>
 
                         <dt class="col-6">Status:</dt>
                         <dd class="col-6">
