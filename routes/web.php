@@ -12,6 +12,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\Admin\CancellationController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\Admin\LedgerReportController;
 
@@ -105,6 +106,15 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/banks/{bank}', [BankController::class, 'update'])->name('admin.banks.update');
     Route::delete('/admin/banks/{bank}', [BankController::class, 'destroy'])->name('admin.banks.destroy');
     Route::post('/admin/banks/{bank}/adjust-balance', [BankController::class, 'adjustBalance'])->name('admin.banks.adjust-balance');
+    
+    // Currency Routes
+    Route::get('/admin/currencies', [CurrencyController::class, 'index'])->name('admin.currencies.index');
+    Route::get('/admin/currencies/create', [CurrencyController::class, 'create'])->name('admin.currencies.create');
+    Route::post('/admin/currencies', [CurrencyController::class, 'store'])->name('admin.currencies.store');
+    Route::get('/admin/currencies/{currency}', [CurrencyController::class, 'show'])->name('admin.currencies.show');
+    Route::get('/admin/currencies/{currency}/edit', [CurrencyController::class, 'edit'])->name('admin.currencies.edit');
+    Route::put('/admin/currencies/{currency}', [CurrencyController::class, 'update'])->name('admin.currencies.update');
+    Route::delete('/admin/currencies/{currency}', [CurrencyController::class, 'destroy'])->name('admin.currencies.destroy');
     
     // Transaction Routes
     Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');

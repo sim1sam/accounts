@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         // Seed admin user
         $this->call(AdminUserSeeder::class);
+        
+        // Seed currencies
+        $this->call(CurrencySeeder::class);
 
         // User::factory(10)->create();
 

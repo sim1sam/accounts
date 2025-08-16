@@ -387,6 +387,12 @@ return [
             'active' => ['admin/banks*'],
         ],
         [
+            'text' => 'Currency',
+            'url' => 'admin/currencies',
+            'icon' => 'fas fa-fw fa-money-bill-alt',
+            'active' => ['admin/currencies*'],
+        ],
+        [
             'text' => 'Transactions',
             'url' => 'admin/transactions',
             'icon' => 'fas fa-fw fa-exchange-alt',
