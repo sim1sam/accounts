@@ -34,7 +34,19 @@
                         <tr>
                             <td>{{ $refund->id }}</td>
                             <td>{{ $refund->customer->name }} ({{ $refund->customer->mobile }})</td>
-                            <td>{{ $refund->refund_amount }}</td>
+                            <td>
+                                @php
+                                    $code = optional(optional($refund->bank)->currency)->code ?? 'BDT';
+                                    $rate = (float) (optional(optional($refund->bank)->currency)->conversion_rate ?? 1);
+                                    if ($rate <= 0) { $rate = 1; }
+                                    // refund_amount is stored in BDT; convert to native when non-BDT
+                                    $native = strtoupper($code) === 'BDT' ? (float) $refund->refund_amount : ((float) $refund->refund_amount / $rate);
+                                @endphp
+                                {{ $code }} {{ number_format($native, 2) }}
+                                @if (strtoupper($code) !== 'BDT')
+                                    <small class="text-muted">(≈ BDT {{ number_format($refund->refund_amount, 2) }})</small>
+                                @endif
+                            </td>
                             <td>{{ $refund->refund_date->format('Y-m-d') }}</td>
                             <td>{{ $refund->bank ? $refund->bank->name . ' (' . $refund->bank->account_number . ')' : 'N/A' }}</td>
                             <td>

@@ -18,7 +18,7 @@ class RefundController extends Controller
      */
     public function index()
     {
-        $refunds = Refund::with(['customer', 'bank'])->latest()->get();
+        $refunds = Refund::with(['customer', 'bank.currency'])->latest()->get();
         return view('admin.refunds.index', compact('refunds'));
     }
 
@@ -127,30 +127,38 @@ class RefundController extends Controller
 
             DB::beginTransaction();
             try {
-                // Create refund
-                $refund = Refund::create($request->only(['customer_id','bank_id','refund_amount','refund_date','remarks']));
-                
-                // Get bank (with currency) and decrease balance
+                // Prepare bank and currency conversion
                 $bank = Bank::with('currency')->findOrFail($request->bank_id);
                 $isBDT = !$bank->currency || strtoupper($bank->currency->code ?? 'BDT') === 'BDT';
-                if (!$bank->decreaseBalance($request->refund_amount, $isBDT)) {
+                $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
+                if ($rate <= 0) { $rate = 1.0; }
+                $inputAmount = (float) $request->refund_amount; // native input
+                $amountBDT = $isBDT ? $inputAmount : $inputAmount * $rate; // store in BDT
+
+                // Create refund storing BDT amount
+                $dataToCreate = $request->only(['customer_id','bank_id','refund_date','remarks']);
+                $dataToCreate['refund_amount'] = $amountBDT;
+                $refund = Refund::create($dataToCreate);
+
+                // Decrease bank balance using native amount with currency awareness
+                if (!$bank->decreaseBalance($inputAmount, $isBDT)) {
                     throw new \Exception('Insufficient balance in bank account');
                 }
-                
+
                 // Get customer details for transaction description
                 $customer = Customer::findOrFail($request->customer_id);
-                
-                // Create transaction record
+
+                // Create transaction record with BDT amount
                 Transaction::create([
                     'payment_id' => null,
                     'refund_id' => $refund->id,
                     'bank_id' => $bank->id,
-                    'amount' => $request->refund_amount,
+                    'amount' => $amountBDT,
                     'type' => 'debit',
                     'description' => 'Refund issued to ' . $customer->name . ' (' . $customer->mobile . ')',
                     'transaction_date' => $request->refund_date,
                 ]);
-                
+
                 DB::commit();
                 return redirect()->route('admin.refunds.index')
                     ->with('success', 'Refund created successfully.');
@@ -168,7 +176,7 @@ class RefundController extends Controller
      */
     public function show(string $id)
     {
-        $refund = Refund::with(['customer', 'bank'])->findOrFail($id);
+        $refund = Refund::with(['customer', 'bank.currency'])->findOrFail($id);
         return view('admin.refunds.show', compact('refund'));
     }
 

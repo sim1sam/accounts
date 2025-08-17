@@ -40,7 +40,19 @@
                                         </tr>
                                         <tr>
                                             <th>Refund Amount</th>
-                                            <td>{{ $refund->refund_amount }}</td>
+                                            @php
+                                                $code = optional(optional($refund->bank)->currency)->code ?? 'BDT';
+                                                $rate = (float) (optional(optional($refund->bank)->currency)->conversion_rate ?? 1);
+                                                if ($rate <= 0) { $rate = 1; }
+                                                // refund_amount is stored in BDT; convert to native for display when non-BDT
+                                                $native = strtoupper($code) === 'BDT' ? (float) $refund->refund_amount : ((float) $refund->refund_amount / $rate);
+                                            @endphp
+                                            <td>
+                                                {{ $code }} {{ number_format($native, 2) }}
+                                                @if (strtoupper($code) !== 'BDT')
+                                                    <small class="text-muted">(≈ BDT {{ number_format($refund->refund_amount, 2) }})</small>
+                                                @endif
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th>Refund Date</th>
