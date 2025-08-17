@@ -94,8 +94,11 @@
                     </div>
                 </div>
                 <div class="card-body position-relative">
+                    <div id="financeChartLoading" class="text-center text-info" style="padding: 25px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading chart data...
+                    </div>
                     <div id="financeChartEmpty" class="text-center text-muted" style="display:none; padding: 25px;">No data for the selected period.</div>
-                    <canvas id="financeChart" height="160" style="width:100%;"></canvas>
+                    <canvas id="financeChart" height="160" style="width:100%; display:none;"></canvas>
                 </div>
             </div>
             <!-- Financial Summary -->
@@ -227,7 +230,7 @@
                             <a href="{{ route('admin.banks.show', $bank->id) }}" class="nav-link">
                                 <i class="fas fa-university"></i> {{ $bank->name }}
                                 <span class="float-right text-{{ $bank->current_balance > 0 ? 'success' : 'danger' }}">
-                                    ৳ {{ number_format($bank->current_balance, 2) }}
+                                    ৳ {{ number_format($bank->current_balance ?? 0, 2) }}
                                 </span>
                             </a>
                         </li>
@@ -319,24 +322,32 @@
 @stop
 
 @section('js')
-    <!-- Chart.js CDN -->
+    <!-- Chart.js CDN with fallback -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Fallback for Chart.js
+        if (typeof Chart === 'undefined') {
+            console.warn('Primary Chart.js CDN failed, loading fallback...');
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>');
+        }
+    </script>
     <script>
         $(function () {
             'use strict'
             
-            // Make the dashboard widgets sortable using jQuery UI
-            $('.connectedSortable').sortable({
-                placeholder: 'sort-highlight',
-                connectWith: '.connectedSortable',
-                handle: '.card-header, .nav-tabs',
-                forcePlaceholderSize: true,
-                zIndex: 999999
-            })
+            // Set up CSRF token for AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
             
-            $('.connectedSortable .card-header').css('cursor', 'move')
+            // jQuery UI sortable removed - not essential for dashboard functionality
+            // If you need sortable widgets, include jQuery UI library
             
             console.log('Accounts Dashboard loaded successfully!');
+            console.log('jQuery version:', $.fn.jquery);
+            console.log('Chart.js available:', typeof Chart !== 'undefined');
 
             // Initialize month picker to current month
             const now = new Date();
@@ -344,8 +355,13 @@
             const $month = $('#monthPicker');
             if (!$month.val()) { $month.val(ym); }
             const $day = $('#dayPicker');
+            
+            console.log('Initial month picker value:', $month.val());
+            console.log('Dashboard data route URL:', '{{ route('admin.dashboard.data') }}');
 
             let chartInstance = null;
+            
+            console.log('About to initialize chart functions...');
 
             function loadDashboardData(params) {
                 let url = '{{ route('admin.dashboard.data') }}';
@@ -353,7 +369,29 @@
                 if (params.date) qs.push('date=' + encodeURIComponent(params.date));
                 else if (params.month) qs.push('month=' + encodeURIComponent(params.month));
                 if (qs.length) url += '?' + qs.join('&');
-                return $.getJSON(url);
+                
+                console.log('Loading dashboard data from URL:', url);
+                console.log('Request params:', params);
+                
+                return $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    timeout: 10000, // 10 second timeout
+                    success: function(data) {
+                        console.log('Successfully loaded dashboard data:', data);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Failed to load dashboard data:', {
+                            url: url,
+                            status: status,
+                            error: error,
+                            response: xhr.responseText,
+                            statusCode: xhr.status,
+                            readyState: xhr.readyState
+                        });
+                    }
+                });
             }
 
             function hasAnyData(payload){
@@ -362,14 +400,38 @@
             }
 
             function renderChart(payload) {
-                const ctx = document.getElementById('financeChart').getContext('2d');
-                const $empty = $('#financeChartEmpty');
-                // Toggle empty state
-                if (!hasAnyData(payload)) {
-                    $empty.show();
-                } else {
-                    $empty.hide();
-                }
+                try {
+                    console.log('Rendering chart with payload:', payload);
+                    
+                    const canvas = document.getElementById('financeChart');
+                    if (!canvas) {
+                        console.error('Chart canvas not found!');
+                        return;
+                    }
+                    
+                    const ctx = canvas.getContext('2d');
+                    const $empty = $('#financeChartEmpty');
+                    const $loading = $('#financeChartLoading');
+                    
+                    // Hide loading state
+                    $loading.hide();
+                    
+                    // Toggle empty state
+                    if (!hasAnyData(payload)) {
+                        console.log('No data to display, showing empty state');
+                        $empty.show();
+                        canvas.style.display = 'none';
+                        return;
+                    } else {
+                        $empty.hide();
+                        canvas.style.display = 'block';
+                    }
+                    
+                    // Check if Chart.js is loaded
+                    if (typeof Chart === 'undefined') {
+                        console.error('Chart.js is not loaded!');
+                        return;
+                    }
                 const data = {
                     labels: payload.labels,
                     datasets: [
@@ -420,23 +482,62 @@
 
                 if (chartInstance) { chartInstance.destroy(); }
                 chartInstance = new Chart(ctx, { type: 'line', data, options });
+                console.log('Chart rendered successfully');
+                
+                } catch (error) {
+                    console.error('Error rendering chart:', error);
+                    $('#financeChartLoading').hide();
+                    $('#financeChartEmpty').show().text('Error loading chart: ' + error.message);
+                }
             }
 
             function refreshChart() {
                 const month = $month.val();
                 const day = ($day.val() || '').trim();
                 const params = day ? { date: day } : { month };
+                
+                // Show loading state
+                $('#financeChartLoading').show();
+                $('#financeChartEmpty').hide();
+                $('#financeChart').hide();
+                
+                console.log('Refreshing chart with params:', params);
+                
+                // Simple approach - just load and render
                 loadDashboardData(params)
                     .done(function(payload){
-                        console.log('dashboard payload', payload);
+                        console.log('dashboard payload received:', payload);
                         renderChart(payload);
                     })
-                    .fail(function(xhr){
-                        console.error('Failed to load dashboard data', xhr);
-                        if (window.toastr) {
-                            toastr.error('Failed to load dashboard data');
-                        }
+                    .fail(function(xhr, status, error){
+                        console.error('Failed to load dashboard data:', {xhr, status, error});
+                        $('#financeChartLoading').hide();
+                        $('#financeChartEmpty').show().text('Failed to load chart data: ' + status + ' - ' + error);
                     });
+            }
+
+            async function tryLoadRecentMonthWithData(maxBack) {
+                // Start from selected month, go back one-by-one
+                let cur = $month.val();
+                if (!cur) return false;
+                let [y, m] = cur.split('-').map(Number);
+                for (let i=0;i<maxBack;i++) {
+                    // step back one month
+                    m -= 1;
+                    if (m === 0) { m = 12; y -= 1; }
+                    const probe = y + '-' + String(m).padStart(2, '0');
+                    try {
+                        const payload = await loadDashboardData({ month: probe });
+                        if (payload && hasAnyData(payload)) {
+                            $month.val(probe);
+                            renderChart(payload);
+                            return true;
+                        }
+                    } catch (e) {
+                        console.warn('probe month failed', probe, e);
+                    }
+                }
+                return false;
             }
 
             $month.on('change', function(){
@@ -445,7 +546,10 @@
                 refreshChart();
             });
             $day.on('change', refreshChart);
+            
+            console.log('About to call refreshChart() for the first time...');
             refreshChart();
+            console.log('Dashboard initialization complete!');
         });
     </script>
 @stop
