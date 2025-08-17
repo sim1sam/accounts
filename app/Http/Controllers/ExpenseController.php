@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Models\AccountTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExpenseController extends Controller
 {
@@ -236,7 +237,9 @@ class ExpenseController extends Controller
      */
     public function processPayment(Request $request, Expense $expense)
     {
+        Log::info('processPayment: start', ['expense_id' => $expense->id]);
         if ($expense->isPaid()) {
+            Log::warning('processPayment: already paid', ['expense_id' => $expense->id]);
             return redirect()->route('admin.expenses.show', $expense)
                 ->with('error', 'Expense is already paid.');
         }
@@ -256,6 +259,14 @@ class ExpenseController extends Controller
             $convertedBDT = $bank->currency && strtoupper($bank->currency->code ?? 'BDT') !== 'BDT'
                 ? $paymentNative * $rate
                 : $paymentNative;
+            Log::info('processPayment: computed amounts', [
+                'bank_id' => $bank->id,
+                'bank_code' => optional($bank->currency)->code,
+                'rate' => $rate,
+                'payment_native' => $paymentNative,
+                'converted_bdt' => $convertedBDT,
+                'expense_bdt' => (float) $expense->amount_in_bdt,
+            ]);
 
             // We support full payment only for now
             $expectedBDT = (float) $expense->amount_in_bdt;
@@ -264,15 +275,26 @@ class ExpenseController extends Controller
                 ? $expectedBDT
                 : ($rate > 0 ? ($expectedBDT / $rate) : $expectedBDT);
 
-            // Small epsilon for float comparison
-            if (abs($convertedBDT - $expectedBDT) > 0.01) {
+            // Compare after rounding to 2 decimals to avoid float mismatch
+            $convertedRounded = round($convertedBDT, 2);
+            $expectedRounded = round($expectedBDT, 2);
+            if (abs($convertedRounded - $expectedRounded) > 0.02) {
+                Log::warning('processPayment: mismatch totals', [
+                    'convertedRounded' => $convertedRounded,
+                    'expectedRounded' => $expectedRounded,
+                    'expectedNative' => $expectedNative,
+                ]);
                 return redirect()->back()
-                    ->withErrors(['payment_amount' => 'Payment must equal the expense amount. Expected ~' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . '.'])
+                    ->withErrors(['payment_amount' => 'Payment must equal the expense amount. Expected about ' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . ' (≈ BDT ' . number_format($expectedRounded, 2) . ').'])
                     ->withInput();
             }
 
             // Check bank has sufficient native balance
             if ((float) ($bank->current_balance ?? 0) + 1e-6 < $paymentNative) {
+                Log::warning('processPayment: insufficient bank balance', [
+                    'bank_balance' => (float) ($bank->current_balance ?? 0),
+                    'needed' => $paymentNative,
+                ]);
                 return redirect()->back()
                     ->withErrors(['bank_id' => 'Insufficient bank balance.'])
                     ->withInput();
@@ -280,16 +302,19 @@ class ExpenseController extends Controller
 
             // Create transaction record in main transaction history (store native amount in Transaction.amount)
             $transaction = Transaction::create([
-                'type' => 'expense',
+                'type' => 'debit', // per schema enum ['credit','debit']
                 'amount' => $paymentNative,
                 'description' => 'Payment for expense on account: ' . $expense->account->name,
                 'bank_id' => $bank->id,
+                'transaction_date' => now()->toDateString(),
                 'reference_type' => 'App\\Models\\Expense',
                 'reference_id' => $expense->id
             ]);
+            Log::info('processPayment: transaction created', ['transaction_id' => $transaction->id ?? null]);
 
             // Update bank balance in native currency using helper
             if (!$bank->decreaseBalance($paymentNative, false)) {
+                Log::error('processPayment: bank decreaseBalance failed');
                 return redirect()->back()
                     ->withErrors(['bank_id' => 'Bank balance update failed.'])
                     ->withInput();
@@ -300,6 +325,7 @@ class ExpenseController extends Controller
             $accountBalanceBefore = $account->current_amount;
             $account->current_amount -= $expense->amount_in_bdt;
             $account->save();
+            Log::info('processPayment: account updated', ['account_id' => $account->id]);
 
             // Create account transaction record for payment
             AccountTransaction::create([
@@ -319,6 +345,7 @@ class ExpenseController extends Controller
                 'paid_at' => now(),
                 'transaction_id' => $transaction->id
             ]);
+            Log::info('processPayment: expense marked paid', ['expense_id' => $expense->id]);
 
             DB::commit();
 
@@ -327,8 +354,9 @@ class ExpenseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('processPayment: exception', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return redirect()->back()
-                ->withErrors(['error' => 'An error occurred while processing payment.'])
+                ->withErrors(['error' => 'Payment failed: ' . $e->getMessage()])
                 ->withInput();
         }
     }
