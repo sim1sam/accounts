@@ -19,6 +19,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AccountTransactionController;
 use App\Http\Controllers\Admin\LedgerReportController;
 use App\Http\Controllers\Admin\BudgetController;
+use App\Http\Controllers\Admin\UserPermissionController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -163,6 +164,14 @@ Route::middleware(['auth'])->group(function () {
     
     // Ledger Report Routes
     Route::get('/admin/reports/ledger', [LedgerReportController::class, 'index'])->name('admin.reports.ledger');
+
+    // User & Permissions Management
+    Route::get('/admin/users/create', [UserPermissionController::class, 'create'])->name('admin.users.create');
+    Route::post('/admin/users', [UserPermissionController::class, 'store'])->name('admin.users.store');
+    Route::get('/admin/users', [UserPermissionController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/users/{user}/edit-permissions', [UserPermissionController::class, 'edit'])->name('admin.users.permissions.edit');
+    Route::put('/admin/users/{user}/permissions', [UserPermissionController::class, 'update'])->name('admin.users.permissions.update');
+    Route::delete('/admin/users/{user}', [UserPermissionController::class, 'destroy'])->name('admin.users.destroy');
 });
 
 // Redirect /home to admin dashboard for authenticated users
