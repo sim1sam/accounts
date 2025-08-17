@@ -18,6 +18,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AccountTransactionController;
 use App\Http\Controllers\Admin\LedgerReportController;
+use App\Http\Controllers\Admin\BudgetController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -133,6 +134,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
     Route::get('/admin/transactions/{transaction}', [TransactionController::class, 'show'])->name('admin.transactions.show');
     
+    // Budget Routes
+    Route::get('/admin/budgets', [BudgetController::class, 'index'])->name('admin.budgets.index');
+    Route::get('/admin/budgets/create', [BudgetController::class, 'create'])->name('admin.budgets.create');
+    Route::post('/admin/budgets', [BudgetController::class, 'store'])->name('admin.budgets.store');
+    Route::get('/admin/budgets/{budget}', [BudgetController::class, 'show'])->name('admin.budgets.show');
+    Route::post('/admin/budgets/{budget}/convert', [BudgetController::class, 'convert'])->name('admin.budgets.convert');
+
     // Expense Routes
     Route::get('/admin/expenses', [ExpenseController::class, 'index'])->name('admin.expenses.index');
     Route::get('/admin/expenses/create', [ExpenseController::class, 'create'])->name('admin.expenses.create');

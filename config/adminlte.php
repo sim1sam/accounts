@@ -405,6 +405,12 @@ return [
             'active' => ['admin/expenses*'],
         ],
         [
+            'text' => 'Budgets',
+            'url' => 'admin/budgets',
+            'icon' => 'fas fa-fw fa-list-alt',
+            'active' => ['admin/budgets*'],
+        ],
+        [
             'text' => 'Account History',
             'url' => 'admin/account-transactions',
             'icon' => 'fas fa-fw fa-history',
