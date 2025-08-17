@@ -3,9 +3,16 @@
 @section('title', 'Customers')
 
 @section('content_header')
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-center">
         <h1>Customers</h1>
-        <a href="{{ route('admin.customers.create') }}" class="btn btn-primary">Add New Customer</a>
+        <div class="btn-group">
+            <a href="{{ route('admin.customers.import') }}" class="btn btn-success">
+                <i class="fas fa-file-upload"></i> Bulk Upload
+            </a>
+            <a href="{{ route('admin.customers.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Customer
+            </a>
+        </div>
     </div>
 @stop
 

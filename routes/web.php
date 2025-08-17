@@ -35,6 +35,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/customers', [CustomerController::class, 'index'])->name('admin.customers.index');
     Route::get('/admin/customers/create', [CustomerController::class, 'create'])->name('admin.customers.create');
     Route::post('/admin/customers', [CustomerController::class, 'store'])->name('admin.customers.store');
+    // Customer Import Routes
+    Route::get('/admin/customers/import', [\App\Http\Controllers\CustomerImportController::class, 'uploadForm'])->name('admin.customers.import');
+    Route::get('/admin/customers/import/sample', [\App\Http\Controllers\CustomerImportController::class, 'sample'])->name('admin.customers.import.sample');
+    Route::post('/admin/customers/import/preview', [\App\Http\Controllers\CustomerImportController::class, 'preview'])->name('admin.customers.import.preview');
+    Route::post('/admin/customers/import/process', [\App\Http\Controllers\CustomerImportController::class, 'process'])->name('admin.customers.import.process');
     Route::get('/admin/customers/{customer}', [CustomerController::class, 'show'])->name('admin.customers.show');
     Route::get('/admin/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('admin.customers.edit');
     Route::put('/admin/customers/{customer}', [CustomerController::class, 'update'])->name('admin.customers.update');
