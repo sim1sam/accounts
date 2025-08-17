@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         // Create or update super admin user from config
-        $email = config('permissions.super_admin_email', 'admin@gmail.com');
+        $email = config('permissions.super_admin_email', 'admin@wisedynamic.com');
         $admin = User::firstOrCreate(
             ['email' => $email],
             [
