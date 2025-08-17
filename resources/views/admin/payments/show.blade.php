@@ -37,7 +37,19 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Amount</label>
-                                <p class="form-control-static">{{ number_format($payment->amount, 2) }}</p>
+                                @php
+                                    $code = optional(optional($payment->bank)->currency)->code ?? 'BDT';
+                                    $rate = (float) (optional(optional($payment->bank)->currency)->conversion_rate ?? 1);
+                                    if ($rate <= 0) { $rate = 1; }
+                                    // amount is stored in BDT; convert to native for display when non-BDT
+                                    $native = strtoupper($code) === 'BDT' ? (float) $payment->amount : ((float) $payment->amount / $rate);
+                                @endphp
+                                <p class="form-control-static">
+                                    {{ $code }} {{ number_format($native, 2) }}
+                                    @if (strtoupper($code) !== 'BDT')
+                                        <small class="text-muted">(≈ BDT {{ number_format($payment->amount, 2) }})</small>
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>

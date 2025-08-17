@@ -46,7 +46,19 @@
                                             Customer not found
                                         @endif
                                     </td>
-                                    <td>{{ number_format($payment->amount, 2) }}</td>
+                                    <td>
+                                        @php
+                                            $code = optional(optional($payment->bank)->currency)->code ?? 'BDT';
+                                            $rate = (float) (optional(optional($payment->bank)->currency)->conversion_rate ?? 1);
+                                            if ($rate <= 0) { $rate = 1; }
+                                            // payment->amount is stored in BDT; convert to native when non-BDT
+                                            $native = strtoupper($code) === 'BDT' ? (float) $payment->amount : ((float) $payment->amount / $rate);
+                                        @endphp
+                                        {{ $code }} {{ number_format($native, 2) }}
+                                        @if (strtoupper($code) !== 'BDT')
+                                            <small class="text-muted">(≈ BDT {{ number_format($payment->amount, 2) }})</small>
+                                        @endif
+                                    </td>
                                     <td>{{ $payment->payment_date->format('Y-m-d') }}</td>
                                     <td>
                                         @if($payment->bank)

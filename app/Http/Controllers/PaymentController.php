@@ -15,7 +15,7 @@ class PaymentController extends Controller
 {
     public function index()
     {
-        $payments = Payment::with('customer')->latest()->paginate(10);
+        $payments = Payment::with(['customer', 'bank.currency'])->latest()->paginate(10);
         return view('admin.payments.index', compact('payments'));
     }
 
@@ -158,6 +158,7 @@ class PaymentController extends Controller
 
     public function show(Payment $payment)
     {
+        $payment->loadMissing(['customer', 'bank.currency']);
         return view('admin.payments.show', compact('payment'));
     }
 
