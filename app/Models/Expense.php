@@ -9,6 +9,7 @@ class Expense extends Model
     protected $fillable = [
         'amount',
         'account_id',
+        'currency_id',
         'remarks',
         'amount_in_bdt',
         'status',
@@ -34,6 +35,14 @@ class Expense extends Model
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    /**
+     * Currency of the native amount for this expense.
+     */
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     /**

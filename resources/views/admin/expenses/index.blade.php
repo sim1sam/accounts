@@ -48,8 +48,17 @@
                                     <td>{{ $expense->id }}</td>
                                     <td>{{ $expense->created_at->format('M d, Y') }}</td>
                                     <td>
-                                        <strong>{{ $expense->account->currency->symbol }} {{ number_format($expense->amount, 2) }}</strong>
-                                        <br><small class="text-muted">৳ {{ number_format($expense->amount_in_bdt, 2) }}</small>
+                                        @php
+                                            $cur = $expense->currency ?? optional($expense->account)->currency;
+                                            $code = strtoupper(optional($cur)->code ?? 'BDT');
+                                            $sym = optional($cur)->symbol ?? ($code === 'BDT' ? '৳' : '');
+                                        @endphp
+                                        <strong>{{ $code }} {{ $sym }} {{ number_format((float) $expense->amount, 2) }}</strong>
+                                        @if($code !== 'BDT')
+                                            <br><small class="text-muted">BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                                        @else
+                                            <br><small class="text-muted">BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                                        @endif
                                     </td>
                                     <td>{{ $expense->account->name }}</td>
                                     <td>

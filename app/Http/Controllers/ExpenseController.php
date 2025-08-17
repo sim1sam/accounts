@@ -18,7 +18,7 @@ class ExpenseController extends Controller
      */
     public function index()
     {
-        $expenses = Expense::with(['account'])->latest()->paginate(15);
+        $expenses = Expense::with(['account','currency'])->latest()->paginate(15);
         return view('admin.expenses.index', compact('expenses'));
     }
 
@@ -94,7 +94,7 @@ class ExpenseController extends Controller
      */
     public function show(Expense $expense)
     {
-        $expense->load(['account', 'transaction', 'accountTransactions']);
+        $expense->load(['account.currency', 'currency', 'transaction.bank.currency', 'accountTransactions']);
         return view('admin.expenses.show', compact('expense'));
     }
 
@@ -226,7 +226,8 @@ class ExpenseController extends Controller
                 ->with('error', 'Expense is already paid.');
         }
 
-        $banks = Bank::where('is_active', true)->get();
+        $banks = Bank::with('currency')->where('is_active', true)->get();
+        $expense->loadMissing(['currency','account.currency']);
         return view('admin.expenses.payment', compact('expense', 'banks'));
     }
 
@@ -248,29 +249,51 @@ class ExpenseController extends Controller
         try {
             DB::beginTransaction();
 
-            $bank = Bank::findOrFail($request->bank_id);
-            $paymentAmount = $request->payment_amount;
+            $bank = Bank::with('currency')->findOrFail($request->bank_id);
+            $paymentNative = (float) $request->payment_amount; // entered in bank's native currency
+            $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
+            if ($rate <= 0) { $rate = 1.0; }
+            $convertedBDT = $bank->currency && strtoupper($bank->currency->code ?? 'BDT') !== 'BDT'
+                ? $paymentNative * $rate
+                : $paymentNative;
 
-            // Check if bank has sufficient balance
-            if ($bank->current_balance < $paymentAmount) {
+            // We support full payment only for now
+            $expectedBDT = (float) $expense->amount_in_bdt;
+            // Compute the expected native amount for this bank
+            $expectedNative = strtoupper(optional($bank->currency)->code ?? 'BDT') === 'BDT'
+                ? $expectedBDT
+                : ($rate > 0 ? ($expectedBDT / $rate) : $expectedBDT);
+
+            // Small epsilon for float comparison
+            if (abs($convertedBDT - $expectedBDT) > 0.01) {
+                return redirect()->back()
+                    ->withErrors(['payment_amount' => 'Payment must equal the expense amount. Expected ~' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . '.'])
+                    ->withInput();
+            }
+
+            // Check bank has sufficient native balance
+            if ((float) ($bank->current_balance ?? 0) + 1e-6 < $paymentNative) {
                 return redirect()->back()
                     ->withErrors(['bank_id' => 'Insufficient bank balance.'])
                     ->withInput();
             }
 
-            // Create transaction record in main transaction history
+            // Create transaction record in main transaction history (store native amount in Transaction.amount)
             $transaction = Transaction::create([
                 'type' => 'expense',
-                'amount' => $paymentAmount,
+                'amount' => $paymentNative,
                 'description' => 'Payment for expense on account: ' . $expense->account->name,
                 'bank_id' => $bank->id,
-                'reference_type' => 'App\Models\Expense',
+                'reference_type' => 'App\\Models\\Expense',
                 'reference_id' => $expense->id
             ]);
 
-            // Update bank balance
-            $bank->current_balance -= $paymentAmount;
-            $bank->save();
+            // Update bank balance in native currency using helper
+            if (!$bank->decreaseBalance($paymentNative, false)) {
+                return redirect()->back()
+                    ->withErrors(['bank_id' => 'Bank balance update failed.'])
+                    ->withInput();
+            }
 
             // Update account balance (DECREASE when paid)
             $account = $expense->account;

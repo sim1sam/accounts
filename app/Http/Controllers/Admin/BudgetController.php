@@ -86,11 +86,12 @@ class BudgetController extends Controller
 
         DB::beginTransaction();
         try {
-            $budget->load(['items.account.currency']);
+            $budget->load(['items.account','items.currency']);
             foreach ($budget->items as $item) {
                 // Create expense from budget item
                 Expense::create([
                     'account_id' => $item->account_id,
+                    'currency_id' => $item->currency_id,
                     'amount' => $item->amount, // native
                     'amount_in_bdt' => $item->amount_in_bdt, // bdt
                     'remarks' => 'Budget ' . $budget->month->format('Y-m') . ' - ' . $item->account->name,

@@ -38,8 +38,17 @@
                     <dl class="row">
                         <dt class="col-sm-3">Amount:</dt>
                         <dd class="col-sm-9">
-                            <strong>{{ $expense->account->currency->symbol }} {{ number_format($expense->amount, 2) }}</strong>
-                            <br><small class="text-muted">Equivalent: ৳ {{ number_format($expense->amount_in_bdt, 2) }}</small>
+                            @php
+                                $eCur = $expense->currency ?? optional($expense->account)->currency;
+                                $eCode = strtoupper(optional($eCur)->code ?? 'BDT');
+                                $eSym = optional($eCur)->symbol ?? ($eCode === 'BDT' ? '৳' : '');
+                            @endphp
+                            <strong>{{ $eCode }} {{ $eSym }} {{ number_format((float) $expense->amount, 2) }}</strong>
+                            @if($eCode !== 'BDT')
+                                <br><small class="text-muted">BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                            @else
+                                <br><small class="text-muted">BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                            @endif
                         </dd>
 
                         <dt class="col-sm-3">Account:</dt>
@@ -79,7 +88,18 @@
                         <dd class="col-sm-9">#{{ $expense->transaction->id }}</dd>
 
                         <dt class="col-sm-3">Payment Amount:</dt>
-                        <dd class="col-sm-9">৳ {{ number_format($expense->transaction->amount, 2) }}</dd>
+                        <dd class="col-sm-9">
+                            @php
+                                $bCur = optional($expense->transaction->bank)->currency;
+                                $bCode = strtoupper(optional($bCur)->code ?? 'BDT');
+                                $bSym = optional($bCur)->symbol ?? ($bCode === 'BDT' ? '৳' : '');
+                                $amtNative = (float) $expense->transaction->amount; // stored as native
+                            @endphp
+                            {{ $bCode }} {{ $bSym }} {{ number_format($amtNative, 2) }}
+                            @if($bCode !== 'BDT')
+                                <br><small class="text-muted">≈ BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                            @endif
+                        </dd>
 
                         <dt class="col-sm-3">Bank:</dt>
                         <dd class="col-sm-9">{{ $expense->transaction->bank->name ?? 'N/A' }}</dd>
