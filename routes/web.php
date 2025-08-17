@@ -31,6 +31,7 @@ Auth::routes();
 // Admin Dashboard Routes (Protected by authentication)
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/dashboard-data', [AdminController::class, 'dashboardData'])->name('admin.dashboard.data');
     
     // Customer Management Routes
     Route::get('/admin/customers', [CustomerController::class, 'index'])->name('admin.customers.index');

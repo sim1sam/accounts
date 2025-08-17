@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -65,14 +66,31 @@ class CustomerImportController extends Controller
             $email = trim($row['email'] ?? '');
             if ($name === '' || ($mobile === '' && $email === '')) { $skipped++; continue; }
 
+            // Parse and validate optional KAM (must exist in staff table)
+            $kamId = isset($row['kam']) && is_numeric($row['kam']) ? (int) $row['kam'] : null;
+            if ($kamId && !Staff::whereKey($kamId)->exists()) {
+                $kamId = null; // avoid FK violation
+            }
+
+            // Normalize DOB to Y-m-d or null
+            $dobRaw = trim($row['dob'] ?? '');
+            $dob = null;
+            if ($dobRaw !== '') {
+                try {
+                    $dob = \Carbon\Carbon::parse($dobRaw)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    $dob = null;
+                }
+            }
+
             $data = [
                 'name' => $name,
                 'mobile' => $mobile ?: null,
                 'email' => $email ?: null,
                 'address' => trim($row['address'] ?? '') ?: null,
-                'dob' => trim($row['dob'] ?? '') ?: null,
+                'dob' => $dob,
                 'delivery_class' => trim($row['delivery_class'] ?? '') ?: null,
-                'kam' => isset($row['kam']) && is_numeric($row['kam']) ? (int) $row['kam'] : null,
+                'kam' => $kamId,
             ];
 
             // Find existing by mobile first, otherwise by email

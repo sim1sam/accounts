@@ -82,6 +82,19 @@
     <div class="row">
         <!-- Left col -->
         <div class="col-md-8">
+            <!-- Month-wise Graphs -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Month-wise Invoices vs Payments vs Expenses</h3>
+                    <div class="form-inline">
+                        <label for="monthPicker" class="mr-2 mb-0">Month</label>
+                        <input type="month" id="monthPicker" class="form-control form-control-sm" value="{{ now()->format('Y-m') }}" />
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="financeChart" height="110"></canvas>
+                </div>
+            </div>
             <!-- Financial Summary -->
             <div class="card">
                 <div class="card-header border-transparent">
@@ -303,6 +316,8 @@
 @stop
 
 @section('js')
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         $(function () {
             'use strict'
@@ -319,6 +334,83 @@
             $('.connectedSortable .card-header').css('cursor', 'move')
             
             console.log('Accounts Dashboard loaded successfully!');
+
+            // Initialize month picker to current month
+            const now = new Date();
+            const ym = now.toISOString().slice(0,7);
+            const $month = $('#monthPicker');
+            if (!$month.val()) { $month.val(ym); }
+
+            let chartInstance = null;
+
+            function loadDashboardData(month) {
+                const url = '{{ route('admin.dashboard.data') }}' + (month ? ('?month=' + encodeURIComponent(month)) : '');
+                return $.getJSON(url);
+            }
+
+            function renderChart(payload) {
+                const ctx = document.getElementById('financeChart').getContext('2d');
+                const data = {
+                    labels: payload.labels,
+                    datasets: [
+                        {
+                            label: 'Invoices',
+                            data: payload.invoices,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            tension: 0.25,
+                        },
+                        {
+                            label: 'Payments',
+                            data: payload.payments,
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.25,
+                        },
+                        {
+                            label: 'Expenses',
+                            data: payload.expenses,
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.25,
+                        }
+                    ]
+                };
+
+                const options = {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: (v) => '৳ ' + Number(v).toLocaleString() }
+                        }
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx){
+                                    const val = ctx.parsed.y || 0;
+                                    return ctx.dataset.label + ': ৳ ' + Number(val).toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                };
+
+                if (chartInstance) { chartInstance.destroy(); }
+                chartInstance = new Chart(ctx, { type: 'line', data, options });
+            }
+
+            function refreshChart() {
+                const month = $month.val();
+                loadDashboardData(month).done(function(payload){
+                    renderChart(payload);
+                });
+            }
+
+            $month.on('change', refreshChart);
+            refreshChart();
         });
     </script>
 @stop
