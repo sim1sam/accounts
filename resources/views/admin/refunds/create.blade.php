@@ -68,10 +68,10 @@
                             
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="refund_amount">Refund Amount (BDT)</label>
+                                    <label for="refund_amount_0">Refund Amount</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text">BDT</span>
+                                            <span class="input-group-text" id="currencyPrefix_0">BDT</span>
                                         </div>
                                         <input type="number" class="form-control @error('refunds.0.refund_amount') is-invalid @enderror" id="refund_amount_0" name="refunds[0][refund_amount]" value="{{ old('refunds.0.refund_amount') }}" placeholder="Enter amount" step="0.01" required>
                                         @error('refund_amount')
@@ -80,6 +80,8 @@
                                             </span>
                                         @enderror
                                     </div>
+                                    <small class="text-muted" id="amountBdtPreview_0" style="display:block;">≈ BDT 0.00</small>
+                                <small class="text-muted" id="nativeTotalPreview_0" style="display:block;">After refund: 0.00</small>
                                 </div>
                             </div>
                             
@@ -103,8 +105,8 @@
                                     <select class="form-control @error('refunds.0.bank_id') is-invalid @enderror" id="bank_id_0" name="refunds[0][bank_id]" required>
                                         <option value="">-- Select Bank --</option>
                                         @foreach($banks as $bank)
-                                            <option value="{{ $bank->id }}" {{ old('refunds.0.bank_id') == $bank->id ? 'selected' : '' }}>
-                                                {{ $bank->name }} - {{ $bank->account_number }} (Balance: {{ number_format($bank->current_balance, 2) }})
+                                            <option value="{{ $bank->id }}" data-currency="{{ optional($bank->currency)->code ?? 'BDT' }}" data-rate="{{ optional($bank->currency)->conversion_rate ?? 1 }}" data-native-balance="{{ $bank->current_balance ?? 0 }}" {{ old('refunds.0.bank_id') == $bank->id ? 'selected' : '' }}>
+                                                {{ $bank->name }} - {{ $bank->account_number }} ({{ optional($bank->currency)->code ?? 'BDT' }}) Balance: {{ number_format($bank->current_balance, 2) }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -492,6 +494,12 @@
                 if (entryCounter > 0) {
                     $(`<hr class="my-4">`).insertBefore(`#refund-entry-${entryCounter}`);
                 }
+
+                // Initialize currency prefix and BDT preview for the new entry
+                setTimeout(function(){
+                    $(`#bank_id_${entryCounter}`).trigger('change');
+                    $(`#refund_amount_${entryCounter}`).trigger('input');
+                }, 0);
             });
             
             // Remove refund entry
@@ -539,13 +547,15 @@
                         
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="refund_amount_${index}">Refund Amount (BDT)</label>
+                                <label for="refund_amount_${index}">Refund Amount</label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text">BDT</span>
+                                        <span class="input-group-text" id="currencyPrefix_${index}">BDT</span>
                                     </div>
                                     <input type="number" class="form-control" id="refund_amount_${index}" name="refunds[${index}][refund_amount]" placeholder="Enter amount" step="0.01" required>
                                 </div>
+                                <small class="text-muted" id="amountBdtPreview_${index}" style="display:block;">≈ BDT 0.00</small>
+                                <small class="text-muted" id="nativeTotalPreview_${index}" style="display:block;">After refund: 0.00</small>
                             </div>
                         </div>
                         
@@ -564,8 +574,8 @@
                                 <select class="form-control" id="bank_id_${index}" name="refunds[${index}][bank_id]" required>
                                     <option value="">-- Select Bank --</option>
                                     @foreach($banks as $bank)
-                                        <option value="{{ $bank->id }}">
-                                            {{ $bank->name }} - {{ $bank->account_number }} (Balance: {{ number_format($bank->current_balance, 2) }})
+                                        <option value="{{ $bank->id }}" data-currency="{{ optional($bank->currency)->code ?? 'BDT' }}" data-rate="{{ optional($bank->currency)->conversion_rate ?? 1 }}" data-native-balance="{{ $bank->current_balance ?? 0 }}">
+                                            {{ $bank->name }} - {{ $bank->account_number }} ({{ optional($bank->currency)->code ?? 'BDT' }}) Balance: {{ number_format($bank->current_balance, 2) }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -669,6 +679,43 @@
             // $('#customerAddress_0');
             // $('#customerDeliveryClass_0');
             // $('#customerKAM_0');
+
+            // Helpers to manage currency prefix and BDT preview
+            function getIndexFromId(id, prefix) {
+                const m = id.match(new RegExp('^' + prefix + '_(\\d+)$'));
+                return m && m[1] ? parseInt(m[1], 10) : 0;
+            }
+
+            function updateCurrencyUI(index) {
+                const $bank = $(`#bank_id_${index}`);
+                const code = ($bank.find('option:selected').data('currency') || 'BDT').toString().toUpperCase();
+                const rate = parseFloat($bank.find('option:selected').data('rate') || 1);
+                const nativeBal = parseFloat($bank.find('option:selected').data('native-balance') || 0);
+                $(`#currencyPrefix_${index}`).text(code);
+                const amount = parseFloat($(`#refund_amount_${index}`).val() || 0);
+                const bdt = code === 'BDT' ? amount : amount * (isFinite(rate) && rate > 0 ? rate : 1);
+                $(`#amountBdtPreview_${index}`).text(`≈ BDT ${bdt.toFixed(2)}`);
+                const newNative = (nativeBal || 0) - (amount || 0);
+                $(`#nativeTotalPreview_${index}`).text(`After refund: ${code} ${newNative.toFixed(2)}`);
+            }
+
+            // React to bank change
+            $(document).on('change', 'select[id^="bank_id_"]', function() {
+                const idx = getIndexFromId(this.id, 'bank_id');
+                updateCurrencyUI(idx);
+            });
+
+            // React to amount typing
+            $(document).on('input', 'input[id^="refund_amount_"]', function() {
+                const idx = getIndexFromId(this.id, 'refund_amount');
+                updateCurrencyUI(idx);
+            });
+
+            // Initialize for first entry on page load
+            setTimeout(function(){
+                $('#bank_id_0').trigger('change');
+                $('#refund_amount_0').trigger('input');
+            }, 0);
         });
     </script>
 @stop

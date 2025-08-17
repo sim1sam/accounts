@@ -28,7 +28,7 @@ class RefundController extends Controller
     public function create()
     {
         $customers = Customer::all();
-        $banks = Bank::where('is_active', true)->get();
+        $banks = Bank::with('currency')->where('is_active', true)->get();
         return view('admin.refunds.create', compact('customers', 'banks'));
     }
 
@@ -70,13 +70,22 @@ class RefundController extends Controller
                 // Begin transaction
                 DB::beginTransaction();
                 try {
-                    // Create the refund
-                    $refund = Refund::create($refundData);
-                    
-                    // Get bank and decrease balance
-                    $bank = Bank::findOrFail($refundData['bank_id']);
-                    if (!$bank->decreaseBalance($refundData['refund_amount'])) {
-                        throw new \Exception('Insufficient balance in bank account');
+                    // Get bank (with currency) and prepare amounts
+                    $bank = Bank::with('currency')->findOrFail($refundData['bank_id']);
+                    $isBDT = !$bank->currency || strtoupper($bank->currency->code ?? 'BDT') === 'BDT';
+                    $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
+                    if ($rate <= 0) { $rate = 1.0; }
+                    $inputAmount = (float) $refundData['refund_amount'];
+                    $amountBDT = $isBDT ? $inputAmount : $inputAmount * $rate;
+
+                    // Create the refund using BDT amount for consistency
+                    $dataToCreate = $refundData;
+                    $dataToCreate['refund_amount'] = $amountBDT;
+                    $refund = Refund::create($dataToCreate);
+
+                    // Decrease bank balance using native or BDT based on bank currency
+                    if (!$bank->decreaseBalance($inputAmount, $isBDT)) {
+                        throw new \Exception('Insufficient balance in bank account for entry #' . ($index + 1));
                     }
                     
                     // Get customer details for transaction description
@@ -87,7 +96,8 @@ class RefundController extends Controller
                         'payment_id' => null,
                         'refund_id' => $refund->id,
                         'bank_id' => $bank->id,
-                        'amount' => $refundData['refund_amount'],
+                        // Store transaction amount in BDT
+                        'amount' => $amountBDT,
                         'type' => 'debit',
                         'description' => 'Refund issued to ' . $customer->name . ' (' . $customer->mobile . ')',
                         'transaction_date' => $refundData['refund_date'],
@@ -118,11 +128,12 @@ class RefundController extends Controller
             DB::beginTransaction();
             try {
                 // Create refund
-                $refund = Refund::create($request->all());
+                $refund = Refund::create($request->only(['customer_id','bank_id','refund_amount','refund_date','remarks']));
                 
-                // Get bank and decrease balance
-                $bank = Bank::findOrFail($request->bank_id);
-                if (!$bank->decreaseBalance($request->refund_amount)) {
+                // Get bank (with currency) and decrease balance
+                $bank = Bank::with('currency')->findOrFail($request->bank_id);
+                $isBDT = !$bank->currency || strtoupper($bank->currency->code ?? 'BDT') === 'BDT';
+                if (!$bank->decreaseBalance($request->refund_amount, $isBDT)) {
                     throw new \Exception('Insufficient balance in bank account');
                 }
                 

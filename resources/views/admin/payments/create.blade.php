@@ -67,7 +67,14 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="amount_0">Amount</label>
-                                            <input type="number" step="0.01" class="form-control" id="amount_0" name="payments[0][amount]" placeholder="Enter amount" required>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="currencyPrefix_0">BDT</span>
+                                                </div>
+                                                <input type="number" step="0.01" class="form-control" id="amount_0" name="payments[0][amount]" placeholder="Enter amount" required>
+                                            </div>
+                                            <small class="text-muted" id="amountBdtPreview_0" style="display:block;">≈ BDT 0.00</small>
+                                            <small class="text-muted" id="nativeTotalPreview_0" style="display:block;">After payment: 0.00</small>
                                         </div>
                                     </div>
                                     
@@ -77,7 +84,9 @@
                                             <select class="form-control" id="bank_id_0" name="payments[0][bank_id]" required>
                                                 <option value="">Select Bank</option>
                                                 @foreach($banks as $bank)
-                                                    <option value="{{ $bank->id }}">{{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }})</option>
+                                                    <option value="{{ $bank->id }}" data-currency="{{ optional($bank->currency)->code ?? 'BDT' }}" data-rate="{{ optional($bank->currency)->conversion_rate ?? 1 }}" data-native-balance="{{ $bank->current_balance ?? 0 }}">
+                                                        {{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }}) ({{ optional($bank->currency)->code ?? 'BDT' }}) Balance: {{ number_format($bank->current_balance, 2) }}
+                                                    </option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -299,7 +308,14 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="amount_${entryCounter}">Amount</label>
-                                    <input type="number" step="0.01" class="form-control" id="amount_${entryCounter}" name="payments[${entryCounter}][amount]" placeholder="Enter amount" required>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="currencyPrefix_${entryCounter}">BDT</span>
+                                        </div>
+                                        <input type="number" step="0.01" class="form-control" id="amount_${entryCounter}" name="payments[${entryCounter}][amount]" placeholder="Enter amount" required>
+                                    </div>
+                                    <small class="text-muted" id="amountBdtPreview_${entryCounter}" style="display:block;">≈ BDT 0.00</small>
+                                    <small class="text-muted" id="nativeTotalPreview_${entryCounter}" style="display:block;">After payment: 0.00</small>
                                 </div>
                             </div>
                             
@@ -309,7 +325,9 @@
                                     <select class="form-control" id="bank_id_${entryCounter}" name="payments[${entryCounter}][bank_id]" required>
                                         <option value="">Select Bank</option>
                                         @foreach($banks as $bank)
-                                            <option value="{{ $bank->id }}">{{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }})</option>
+                                            <option value="{{ $bank->id }}" data-currency="{{ optional($bank->currency)->code ?? 'BDT' }}" data-rate="{{ optional($bank->currency)->conversion_rate ?? 1 }}" data-native-balance="{{ $bank->current_balance ?? 0 }}">
+                                                {{ $bank->name }} - {{ $bank->account_name }} ({{ $bank->account_number }}) ({{ optional($bank->currency)->code ?? 'BDT' }}) Balance: {{ number_format($bank->current_balance, 2) }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -376,6 +394,9 @@
                 
                 // Initialize the dropdown for the new entry
                 $(`#customerDropdown_${entryCounter}`).dropdown();
+
+                // Initialize currency UI for the new entry
+                updateCurrencyUI(entryCounter);
             });
             
             // Remove payment entry
@@ -383,6 +404,40 @@
                 const entryId = $(this).data('entry-id');
                 $(`#payment-entry-${entryId}`).remove();
             });
+
+            // ---- Currency helpers for payment entries ----
+            function getIndexFromId(id, prefix) {
+                const m = id.match(new RegExp('^' + prefix + '_(\\d+)$'));
+                return m && m[1] ? parseInt(m[1], 10) : 0;
+            }
+
+            function updateCurrencyUI(index) {
+                const $bank = $(`#bank_id_${index}`);
+                const code = ($bank.find('option:selected').data('currency') || 'BDT').toString().toUpperCase();
+                const rate = parseFloat($bank.find('option:selected').data('rate') || 1);
+                const nativeBal = parseFloat($bank.find('option:selected').data('native-balance') || 0);
+                $(`#currencyPrefix_${index}`).text(code);
+                const amount = parseFloat($(`#amount_${index}`).val() || 0);
+                const bdt = code === 'BDT' ? amount : amount * (isFinite(rate) && rate > 0 ? rate : 1);
+                $(`#amountBdtPreview_${index}`).text(`≈ BDT ${bdt.toFixed(2)}`);
+                const newNative = (nativeBal || 0) + (amount || 0); // Payment increases native balance
+                $(`#nativeTotalPreview_${index}`).text(`After payment: ${code} ${newNative.toFixed(2)}`);
+            }
+
+            // React to bank change
+            $(document).on('change', 'select[id^="bank_id_"]', function() {
+                const idx = getIndexFromId(this.id, 'bank_id');
+                updateCurrencyUI(idx);
+            });
+
+            // React to amount typing
+            $(document).on('input', 'input[id^="amount_"]', function() {
+                const idx = getIndexFromId(this.id, 'amount');
+                updateCurrencyUI(idx);
+            });
+
+            // Initialize first entry
+            updateCurrencyUI(0);
         });
     </script>
 @stop

@@ -22,7 +22,7 @@ class PaymentController extends Controller
     public function create()
     {
         $customers = Customer::all();
-        $banks = Bank::where('is_active', 1)->get();
+        $banks = Bank::with('currency')->where('is_active', 1)->get();
         return view('admin.payments.create', compact('customers', 'banks'));
     }
 
@@ -51,21 +51,30 @@ class PaymentController extends Controller
                 // Validation passed, proceed with payment creation
                 DB::beginTransaction();
                 try {
-                    // Create payment
-                    $payment = Payment::create($paymentData);
-                    
-                    // Get bank and increase balance
-                    $bank = Bank::findOrFail($paymentData['bank_id']);
-                    $bank->increaseBalance($paymentData['amount']);
+                    // Get bank with currency and compute amounts
+                    $bank = Bank::with('currency')->findOrFail($paymentData['bank_id']);
+                    $isBDT = !$bank->currency || strtoupper($bank->currency->code ?? 'BDT') === 'BDT';
+                    $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
+                    if ($rate <= 0) { $rate = 1.0; }
+                    $inputAmount = (float) $paymentData['amount'];
+                    $amountBDT = $isBDT ? $inputAmount : $inputAmount * $rate;
+
+                    // Create payment saving amount in BDT for consistency
+                    $dataToCreate = $paymentData;
+                    $dataToCreate['amount'] = $amountBDT;
+                    $payment = Payment::create($dataToCreate);
+
+                    // Increase bank balance using native or BDT based on bank currency
+                    $bank->increaseBalance($inputAmount, $isBDT);
                     
                     // Get customer details for transaction description
                     $customer = Customer::findOrFail($paymentData['customer_id']);
                     
-                    // Create transaction record
+                    // Create transaction record (amount in BDT)
                     Transaction::create([
                         'payment_id' => $payment->id,
                         'bank_id' => $bank->id,
-                        'amount' => $paymentData['amount'],
+                        'amount' => $amountBDT,
                         'type' => 'credit',
                         'description' => 'Payment received from ' . $customer->name . ' (' . $customer->mobile . ')',
                         'transaction_date' => $paymentData['payment_date'],
@@ -103,21 +112,30 @@ class PaymentController extends Controller
 
             DB::beginTransaction();
             try {
-                // Create payment
-                $payment = Payment::create($request->all());
-                
-                // Get bank and increase balance
-                $bank = Bank::findOrFail($request->bank_id);
-                $bank->increaseBalance($request->amount);
+                // Get bank with currency and compute amounts
+                $bank = Bank::with('currency')->findOrFail($request->bank_id);
+                $isBDT = !$bank->currency || strtoupper($bank->currency->code ?? 'BDT') === 'BDT';
+                $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
+                if ($rate <= 0) { $rate = 1.0; }
+                $inputAmount = (float) $request->amount;
+                $amountBDT = $isBDT ? $inputAmount : $inputAmount * $rate;
+
+                // Create payment saving amount in BDT for consistency
+                $dataToCreate = $request->all();
+                $dataToCreate['amount'] = $amountBDT;
+                $payment = Payment::create($dataToCreate);
+
+                // Increase bank balance using native or BDT based on bank currency
+                $bank->increaseBalance($inputAmount, $isBDT);
                 
                 // Get customer details for transaction description
                 $customer = Customer::findOrFail($request->customer_id);
                 
-                // Create transaction record
+                // Create transaction record (amount in BDT)
                 Transaction::create([
                     'payment_id' => $payment->id,
                     'bank_id' => $bank->id,
-                    'amount' => $request->amount,
+                    'amount' => $amountBDT,
                     'type' => 'credit',
                     'description' => 'Payment received from ' . $customer->name . ' (' . $customer->mobile . ')',
                     'transaction_date' => $request->payment_date,
