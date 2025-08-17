@@ -11,6 +11,7 @@ use App\Models\AccountTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ExpenseController extends Controller
 {
@@ -28,7 +29,7 @@ class ExpenseController extends Controller
      */
     public function create()
     {
-        $accounts = Account::where('is_active', true)->get();
+        $accounts = Account::with('currency')->where('is_active', true)->get();
         return view('admin.expenses.create', compact('accounts'));
     }
 
@@ -46,19 +47,31 @@ class ExpenseController extends Controller
         try {
             DB::beginTransaction();
 
-            $account = Account::findOrFail($request->account_id);
+            $account = Account::with('currency')->findOrFail($request->account_id);
             
-            // Calculate amount in BDT using account's currency
-            $amountInBDT = $request->amount * $account->currency->conversion_rate;
+            // Calculate amount in BDT using account's currency (fallback rate=1)
+            $rate = optional($account->currency)->conversion_rate ?? 1;
+            if ($rate <= 0) { $rate = 1; }
+            $amountInBDT = $request->amount * $rate;
             
+            // Legacy support: purpose column might still exist and be NOT NULL
+            $purpose = null;
+            if (Schema::hasColumn('expenses', 'purpose')) {
+                $purpose = $request->input('purpose');
+                if ($purpose === null || $purpose === '') { $purpose = 'Expense'; }
+            }
+
             // Create expense
-            $expense = Expense::create([
+            $expenseData = [
                 'amount' => $request->amount,
                 'account_id' => $request->account_id,
+                'currency_id' => $account->currency_id,
                 'remarks' => $request->remarks,
                 'amount_in_bdt' => $amountInBDT,
                 'status' => 'pending'
-            ]);
+            ];
+            if ($purpose !== null) { $expenseData['purpose'] = $purpose; }
+            $expense = Expense::create($expenseData);
 
             // Update account balance (INCREASE for pending expense)
             $balanceBefore = $account->current_amount;
@@ -84,8 +97,9 @@ class ExpenseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Expense create failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return redirect()->back()
-                ->withErrors(['error' => 'An error occurred while creating the expense.'])
+                ->withErrors(['error' => 'An error occurred while creating the expense: ' . $e->getMessage()])
                 ->withInput();
         }
     }
@@ -109,7 +123,7 @@ class ExpenseController extends Controller
                 ->with('error', 'Cannot edit a paid expense.');
         }
 
-        $accounts = Account::where('is_active', true)->get();
+        $accounts = Account::with('currency')->where('is_active', true)->get();
         return view('admin.expenses.edit', compact('expense', 'accounts'));
     }
 
@@ -132,8 +146,10 @@ class ExpenseController extends Controller
         try {
             DB::beginTransaction();
 
-            $newAccount = Account::findOrFail($request->account_id);
-            $newAmountInBDT = $request->amount * $newAccount->currency->conversion_rate;
+            $newAccount = Account::with('currency')->findOrFail($request->account_id);
+            $newRate = optional($newAccount->currency)->conversion_rate ?? 1;
+            if ($newRate <= 0) { $newRate = 1; }
+            $newAmountInBDT = $request->amount * $newRate;
             
             // Reverse the old expense from account (DECREASE since we added it before)
             $oldAccount = $expense->account;
@@ -147,13 +163,23 @@ class ExpenseController extends Controller
             $newAccount->current_amount += $newAmountInBDT;
             $newAccount->save();
 
+            // Legacy support: purpose column might still exist
+            $purpose = null;
+            if (Schema::hasColumn('expenses', 'purpose')) {
+                $purpose = $request->input('purpose');
+                if ($purpose === null || $purpose === '') { $purpose = $expense->purpose ?? 'Expense'; }
+            }
+
             // Update expense
-            $expense->update([
+            $updateData = [
                 'amount' => $request->amount,
                 'account_id' => $request->account_id,
+                'currency_id' => $newAccount->currency_id,
                 'remarks' => $request->remarks,
                 'amount_in_bdt' => $newAmountInBDT,
-            ]);
+            ];
+            if ($purpose !== null) { $updateData['purpose'] = $purpose; }
+            $expense->update($updateData);
 
             // Update account transaction record
             $expense->accountTransactions()->delete(); // Remove old transaction
