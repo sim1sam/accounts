@@ -27,12 +27,23 @@ class AdminController extends Controller
     public function dashboardData(Request $request)
     {
         $month = $request->query('month');
-        try {
-            $start = $month ? Carbon::createFromFormat('Y-m', $month)->startOfMonth() : now()->startOfMonth();
-        } catch (\Throwable $e) {
-            $start = now()->startOfMonth();
+        $date = $request->query('date'); // optional single day in Y-m-d
+        if ($date) {
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', $date)->startOfDay();
+                $end = (clone $start)->endOfDay();
+            } catch (\Throwable $e) {
+                $start = now()->startOfDay();
+                $end = (clone $start)->endOfDay();
+            }
+        } else {
+            try {
+                $start = $month ? Carbon::createFromFormat('Y-m', $month)->startOfMonth() : now()->startOfMonth();
+            } catch (\Throwable $e) {
+                $start = now()->startOfMonth();
+            }
+            $end = (clone $start)->endOfMonth();
         }
-        $end = (clone $start)->endOfMonth();
 
         // Build labels for each day
         $dates = [];
@@ -71,7 +82,8 @@ class AdminController extends Controller
             'invoices' => $invoices,
             'payments' => $payments,
             'expenses' => $expenses,
-            'month' => $start->format('Y-m'),
+            'month' => $date ? null : $start->format('Y-m'),
+            'date' => $date ? $start->format('Y-m-d') : null,
         ]);
     }
 }

@@ -85,14 +85,17 @@
             <!-- Month-wise Graphs -->
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Month-wise Invoices vs Payments vs Expenses</h3>
+                    <h3 class="card-title mb-0">Invoices vs Payments vs Expenses</h3>
                     <div class="form-inline">
                         <label for="monthPicker" class="mr-2 mb-0">Month</label>
-                        <input type="month" id="monthPicker" class="form-control form-control-sm" value="{{ now()->format('Y-m') }}" />
+                        <input type="month" id="monthPicker" class="form-control form-control-sm mr-3" value="{{ now()->format('Y-m') }}" />
+                        <label for="dayPicker" class="mr-2 mb-0">Day</label>
+                        <input type="date" id="dayPicker" class="form-control form-control-sm" />
                     </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="financeChart" height="110"></canvas>
+                <div class="card-body position-relative">
+                    <div id="financeChartEmpty" class="text-center text-muted" style="display:none; padding: 25px;">No data for the selected period.</div>
+                    <canvas id="financeChart" height="160" style="width:100%;"></canvas>
                 </div>
             </div>
             <!-- Financial Summary -->
@@ -340,16 +343,33 @@
             const ym = now.toISOString().slice(0,7);
             const $month = $('#monthPicker');
             if (!$month.val()) { $month.val(ym); }
+            const $day = $('#dayPicker');
 
             let chartInstance = null;
 
-            function loadDashboardData(month) {
-                const url = '{{ route('admin.dashboard.data') }}' + (month ? ('?month=' + encodeURIComponent(month)) : '');
+            function loadDashboardData(params) {
+                let url = '{{ route('admin.dashboard.data') }}';
+                const qs = [];
+                if (params.date) qs.push('date=' + encodeURIComponent(params.date));
+                else if (params.month) qs.push('month=' + encodeURIComponent(params.month));
+                if (qs.length) url += '?' + qs.join('&');
                 return $.getJSON(url);
+            }
+
+            function hasAnyData(payload){
+                const sum = (arr) => (arr || []).reduce((a,b)=>a+(+b||0), 0);
+                return sum(payload.invoices) > 0 || sum(payload.payments) > 0 || sum(payload.expenses) > 0;
             }
 
             function renderChart(payload) {
                 const ctx = document.getElementById('financeChart').getContext('2d');
+                const $empty = $('#financeChartEmpty');
+                // Toggle empty state
+                if (!hasAnyData(payload)) {
+                    $empty.show();
+                } else {
+                    $empty.hide();
+                }
                 const data = {
                     labels: payload.labels,
                     datasets: [
@@ -404,12 +424,27 @@
 
             function refreshChart() {
                 const month = $month.val();
-                loadDashboardData(month).done(function(payload){
-                    renderChart(payload);
-                });
+                const day = ($day.val() || '').trim();
+                const params = day ? { date: day } : { month };
+                loadDashboardData(params)
+                    .done(function(payload){
+                        console.log('dashboard payload', payload);
+                        renderChart(payload);
+                    })
+                    .fail(function(xhr){
+                        console.error('Failed to load dashboard data', xhr);
+                        if (window.toastr) {
+                            toastr.error('Failed to load dashboard data');
+                        }
+                    });
             }
 
-            $month.on('change', refreshChart);
+            $month.on('change', function(){
+                // If month changes, clear day filter
+                $day.val('');
+                refreshChart();
+            });
+            $day.on('change', refreshChart);
             refreshChart();
         });
     </script>

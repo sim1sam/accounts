@@ -87,16 +87,21 @@ class BudgetController extends Controller
         DB::beginTransaction();
         try {
             $budget->load(['items.account','items.currency']);
+            $hasPurpose = \Schema::hasColumn('expenses', 'purpose');
             foreach ($budget->items as $item) {
                 // Create expense from budget item
-                Expense::create([
+                $payload = [
                     'account_id' => $item->account_id,
                     'currency_id' => $item->currency_id,
-                    'amount' => $item->amount, // native
-                    'amount_in_bdt' => $item->amount_in_bdt, // bdt
+                    'amount' => (float) $item->amount, // native
+                    'amount_in_bdt' => (float) $item->amount_in_bdt, // bdt
                     'remarks' => 'Budget ' . $budget->month->format('Y-m') . ' - ' . $item->account->name,
                     'status' => 'pending',
-                ]);
+                ];
+                if ($hasPurpose) {
+                    $payload['purpose'] = 'Budget ' . $budget->month->format('Y-m') . ' - ' . $item->account->name;
+                }
+                Expense::create($payload);
             }
 
             $budget->update(['status' => 'converted']);
