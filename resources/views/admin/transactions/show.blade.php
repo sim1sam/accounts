@@ -30,7 +30,18 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Amount</label>
-                                <p class="form-control-static">{{ number_format($transaction->amount, 2) }}</p>
+                                @php
+                                    $code = optional(optional($transaction->bank)->currency)->code ?? 'BDT';
+                                    $rate = (float) (optional(optional($transaction->bank)->currency)->conversion_rate ?? 1);
+                                    if ($rate <= 0) { $rate = 1; }
+                                    $native = strtoupper($code) === 'BDT' ? (float) $transaction->amount : ((float) $transaction->amount / $rate);
+                                @endphp
+                                <p class="form-control-static">
+                                    {{ $code }} {{ number_format($native, 2) }}
+                                    @if (strtoupper($code) !== 'BDT')
+                                        <small class="text-muted">(≈ BDT {{ number_format($transaction->amount, 2) }})</small>
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>

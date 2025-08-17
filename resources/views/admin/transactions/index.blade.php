@@ -47,7 +47,19 @@
                                             Bank not found
                                         @endif
                                     </td>
-                                    <td>{{ number_format($transaction->amount, 2) }}</td>
+                                    <td>
+                                        @php
+                                            $code = optional(optional($transaction->bank)->currency)->code ?? 'BDT';
+                                            $rate = (float) (optional(optional($transaction->bank)->currency)->conversion_rate ?? 1);
+                                            if ($rate <= 0) { $rate = 1; }
+                                            // amount stored in BDT; convert to native when non-BDT
+                                            $native = strtoupper($code) === 'BDT' ? (float) $transaction->amount : ((float) $transaction->amount / $rate);
+                                        @endphp
+                                        {{ $code }} {{ number_format($native, 2) }}
+                                        @if (strtoupper($code) !== 'BDT')
+                                            <small class="text-muted">(≈ BDT {{ number_format($transaction->amount, 2) }})</small>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if($transaction->type == 'credit')
                                             <span class="badge badge-success">Credit</span>
