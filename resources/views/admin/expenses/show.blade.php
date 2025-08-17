@@ -24,7 +24,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Expense Information</h3>
                     <div class="card-tools">
-                        @if($expense->isPending())
+                        @if(!$expense->isPaid())
                             <a href="{{ route('admin.expenses.edit', $expense) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -56,13 +56,21 @@
 
                         <dt class="col-sm-3">Status:</dt>
                         <dd class="col-sm-9">
-                            @if($expense->isPending())
-                                <span class="badge badge-warning">Pending</span>
-                            @else
+                            @php
+                                $paidBDT = (float) $expense->accountTransactions()->where('type','expense')->sum('amount');
+                                $remainingBDT = max(((float)$expense->amount_in_bdt) - $paidBDT, 0);
+                            @endphp
+                            @if($expense->isPaid() || $remainingBDT <= 0.01)
                                 <span class="badge badge-success">Paid</span>
                                 @if($expense->paid_at)
                                     <br><small class="text-muted">Paid on: {{ $expense->paid_at->format('M d, Y H:i') }}</small>
                                 @endif
+                            @elseif($expense->isPartial())
+                                <span class="badge badge-info">Partial</span>
+                                <br><small class="text-muted">Due: BDT {{ number_format($remainingBDT, 2) }}</small>
+                            @else
+                                <span class="badge badge-warning">Pending</span>
+                                <br><small class="text-muted">Due: BDT {{ number_format($remainingBDT, 2) }}</small>
                             @endif
                         </dd>
 
@@ -147,7 +155,7 @@
                     <a href="{{ route('admin.expenses.index') }}" class="btn btn-default btn-block">
                         <i class="fas fa-arrow-left"></i> Back to Expenses
                     </a>
-                    @if($expense->isPending())
+                    @if(!$expense->isPaid())
                         <a href="{{ route('admin.expenses.payment', $expense) }}" class="btn btn-success btn-block">
                             <i class="fas fa-credit-card"></i> Process Payment
                         </a>

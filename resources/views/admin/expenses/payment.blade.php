@@ -26,22 +26,23 @@
         const codeBadge = document.getElementById('bank-code');
         const bdtHelper = document.getElementById('helper-bdt');
         const nativeHelper = document.getElementById('helper-native');
-        const expenseBDT = {{ json_encode((float) $expense->amount_in_bdt) }};
+        // Remaining due in BDT (expense total - prior payments)
+        const expenseBDTRemaining = {{ json_encode((float) ($expense->amount_in_bdt - $expense->accountTransactions()->where('type','expense')->sum('amount'))) }};
 
         function recalc(){
             const opt = bankSelect.options[bankSelect.selectedIndex];
             const code = opt && opt.dataset.code ? opt.dataset.code : 'BDT';
             const rate = opt && opt.dataset.rate ? parseFloat(opt.dataset.rate) : 1;
             codeBadge.textContent = code;
-            // Auto-fill expected native amount for the selected bank
-            const expectedNative = code === 'BDT' ? expenseBDT : (rate > 0 ? (expenseBDT / rate) : expenseBDT);
+            // Auto-fill expected native amount for the selected bank based on remaining due
+            const expectedNative = code === 'BDT' ? expenseBDTRemaining : (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining);
             if (!input.value || parseFloat(input.value) <= 0) {
                 input.value = expectedNative.toFixed(2);
             }
             // Show helper: native -> BDT
             const entered = parseFloat(input.value || 0);
             const enteredBDT = code === 'BDT' ? entered : (entered * (rate > 0 ? rate : 1));
-            bdtHelper.textContent = 'Expense amount: BDT ' + expenseBDT.toFixed(2);
+            bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2);
             nativeHelper.textContent = 'You will pay: ' + code + ' ' + (entered.toFixed(2)) + ' ≈ BDT ' + enteredBDT.toFixed(2);
         }
 
@@ -108,7 +109,11 @@
                                     <strong>{{ $message }}</strong>
                                 </span>
                             @enderror
-                            <small class="form-text text-muted" id="helper-bdt">Expense amount: BDT {{ number_format((float) $expense->amount_in_bdt, 2) }}</small>
+                            @php
+                                $paidBDT = (float) $expense->accountTransactions()->where('type','expense')->sum('amount');
+                                $remainingBDT = max(((float)$expense->amount_in_bdt) - $paidBDT, 0);
+                            @endphp
+                            <small class="form-text text-muted" id="helper-bdt">Remaining due: BDT {{ number_format($remainingBDT, 2) }}</small>
                             <small class="form-text text-muted" id="helper-native"></small>
                         </div>
                     </div>
@@ -147,7 +152,15 @@
 
                         <dt class="col-6">Status:</dt>
                         <dd class="col-6">
-                            <span class="badge badge-warning">Pending Payment</span>
+                            @if($remainingBDT <= 0.01)
+                                <span class="badge badge-success">Paid</span>
+                            @elseif($paidBDT > 0)
+                                <span class="badge badge-info">Partial</span>
+                                <br><small class="text-muted">Due: BDT {{ number_format($remainingBDT, 2) }}</small>
+                            @else
+                                <span class="badge badge-warning">Pending</span>
+                                <br><small class="text-muted">Due: BDT {{ number_format($remainingBDT, 2) }}</small>
+                            @endif
                         </dd>
                     </dl>
                 </div>
@@ -159,9 +172,9 @@
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-info-circle text-info"></i> Payment will be recorded in transaction history</li>
-                        <li><i class="fas fa-bank text-primary"></i> Bank balance will be deducted</li>
-                        <li><i class="fas fa-check text-success"></i> Expense status will be marked as paid</li>
+                        <li><i class="fas fa-info-circle text-info"></i> Payment is recorded in transaction history</li>
+                        <li><i class="fas fa-bank text-primary"></i> Bank balance is deducted in native currency</li>
+                        <li><i class="fas fa-check text-success"></i> Expense is marked partial until fully paid</li>
                     </ul>
                 </div>
             </div>

@@ -268,24 +268,28 @@ class ExpenseController extends Controller
                 'expense_bdt' => (float) $expense->amount_in_bdt,
             ]);
 
-            // We support full payment only for now
+            // Determine remaining amount in BDT for this expense (sum of prior payments)
             $expectedBDT = (float) $expense->amount_in_bdt;
-            // Compute the expected native amount for this bank
-            $expectedNative = strtoupper(optional($bank->currency)->code ?? 'BDT') === 'BDT'
-                ? $expectedBDT
-                : ($rate > 0 ? ($expectedBDT / $rate) : $expectedBDT);
+            $paidBDT = (float) $expense->accountTransactions()
+                ->where('type', 'expense')
+                ->sum('amount');
+            $remainingBDT = max($expectedBDT - $paidBDT, 0.0);
 
-            // Compare after rounding to 2 decimals to avoid float mismatch
+            // Compute the expected native amount for remaining due in this bank currency
+            $expectedNative = strtoupper(optional($bank->currency)->code ?? 'BDT') === 'BDT'
+                ? $remainingBDT
+                : ($rate > 0 ? ($remainingBDT / $rate) : $remainingBDT);
+
+            // Compare after rounding to 2 decimals to avoid float mismatch; allow partial up to remaining
             $convertedRounded = round($convertedBDT, 2);
-            $expectedRounded = round($expectedBDT, 2);
-            if (abs($convertedRounded - $expectedRounded) > 0.02) {
-                Log::warning('processPayment: mismatch totals', [
+            $remainingRounded = round($remainingBDT, 2);
+            if ($convertedRounded > $remainingRounded + 0.02) {
+                Log::warning('processPayment: attempted overpay', [
                     'convertedRounded' => $convertedRounded,
-                    'expectedRounded' => $expectedRounded,
-                    'expectedNative' => $expectedNative,
+                    'remainingRounded' => $remainingRounded,
                 ]);
                 return redirect()->back()
-                    ->withErrors(['payment_amount' => 'Payment must equal the expense amount. Expected about ' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . ' (≈ BDT ' . number_format($expectedRounded, 2) . ').'])
+                    ->withErrors(['payment_amount' => 'You cannot pay more than the remaining due. Max allowed about ' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . ' (≈ BDT ' . number_format($remainingRounded, 2) . ').'])
                     ->withInput();
             }
 
@@ -320,10 +324,10 @@ class ExpenseController extends Controller
                     ->withInput();
             }
 
-            // Update account balance (DECREASE when paid)
+            // Update account balance (DECREASE when paid). For partial, decrease by the partial BDT amount
             $account = $expense->account;
             $accountBalanceBefore = $account->current_amount;
-            $account->current_amount -= $expense->amount_in_bdt;
+            $account->current_amount -= $convertedRounded;
             $account->save();
             Log::info('processPayment: account updated', ['account_id' => $account->id]);
 
@@ -332,20 +336,30 @@ class ExpenseController extends Controller
                 'account_id' => $account->id,
                 'type' => 'expense',
                 'description' => 'Expense paid for account: ' . $expense->account->name,
-                'amount' => $expense->amount_in_bdt,
+                'amount' => $convertedRounded,
                 'balance_before' => $accountBalanceBefore,
                 'balance_after' => $account->current_amount,
                 'reference_type' => 'App\Models\Expense',
                 'reference_id' => $expense->id
             ]);
 
-            // Update expense status
-            $expense->update([
-                'status' => 'paid',
-                'paid_at' => now(),
-                'transaction_id' => $transaction->id
-            ]);
-            Log::info('processPayment: expense marked paid', ['expense_id' => $expense->id]);
+            // Update expense status depending on remaining due after this payment
+            $newPaidBDT = $paidBDT + $convertedRounded;
+            $newRemainingBDT = max($expectedBDT - $newPaidBDT, 0.0);
+            if ($newRemainingBDT <= 0.02) {
+                $expense->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'transaction_id' => $transaction->id
+                ]);
+                Log::info('processPayment: expense marked paid', ['expense_id' => $expense->id]);
+            } else {
+                $expense->update([
+                    'status' => 'partial',
+                    'transaction_id' => $transaction->id
+                ]);
+                Log::info('processPayment: expense marked partial', ['expense_id' => $expense->id, 'remaining_bdt' => $newRemainingBDT]);
+            }
 
             DB::commit();
 

@@ -76,4 +76,12 @@ class Expense extends Model
     {
         return $this->status === 'pending';
     }
+
+    /**
+     * Check if expense is partially paid.
+     */
+    public function isPartial()
+    {
+        return $this->status === 'partial';
+    }
 }
