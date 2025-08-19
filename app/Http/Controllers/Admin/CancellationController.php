@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Cancellation;
 use App\Models\Customer;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 
 class CancellationController extends Controller
@@ -24,7 +25,8 @@ class CancellationController extends Controller
     public function create()
     {
         $customers = Customer::all();
-        return view('admin.cancellations.create', compact('customers'));
+        $staff = Staff::orderBy('name')->get();
+        return view('admin.cancellations.create', compact('customers', 'staff'));
     }
 
     /**
@@ -38,6 +40,7 @@ class CancellationController extends Controller
             foreach ($request->cancellations as $index => $cancellationData) {
                 $request->validate([
                     "cancellations.{$index}.customer_id" => 'required|exists:customers,id',
+                    "cancellations.{$index}.staff_id" => 'required|exists:staff,id',
                     "cancellations.{$index}.cancellation_value" => 'required|numeric|min:0',
                     "cancellations.{$index}.remarks" => 'nullable|string',
                     "cancellations.{$index}.cancellation_date" => 'required|date'
@@ -55,6 +58,7 @@ class CancellationController extends Controller
             // Handle single cancellation (legacy support)
             $request->validate([
                 'customer_id' => 'required|exists:customers,id',
+                'staff_id' => 'required|exists:staff,id',
                 'cancellation_value' => 'required|numeric|min:0',
                 'remarks' => 'nullable|string',
                 'cancellation_date' => 'required|date'
@@ -83,7 +87,8 @@ class CancellationController extends Controller
     {
         $cancellation = Cancellation::findOrFail($id);
         $customers = Customer::all();
-        return view('admin.cancellations.edit', compact('cancellation', 'customers'));
+        $staff = Staff::orderBy('name')->get();
+        return view('admin.cancellations.edit', compact('cancellation', 'customers', 'staff'));
     }
 
     /**
@@ -93,6 +98,7 @@ class CancellationController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'staff_id' => 'required|exists:staff,id',
             'cancellation_value' => 'required|numeric|min:0',
             'remarks' => 'nullable|string',
             'cancellation_date' => 'required|date'

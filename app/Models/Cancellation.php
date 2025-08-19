@@ -8,6 +8,7 @@ class Cancellation extends Model
 {
     protected $fillable = [
         'customer_id',
+        'staff_id',
         'cancellation_value',
         'remarks',
         'cancellation_date'
@@ -20,5 +21,10 @@ class Cancellation extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class);
     }
 }

@@ -58,6 +58,18 @@
                                     
                                     <div class="col-md-4">
                                         <div class="form-group">
+                                            <label for="staff_id_0">Staff</label>
+                                            <select class="form-control" id="staff_id_0" name="cancellations[0][staff_id]" required>
+                                                <option value="">-- Select Staff --</option>
+                                                @foreach($staff as $s)
+                                                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="form-group">
                                             <label for="cancellation_value_0">Cancellation Value</label>
                                             <input type="number" class="form-control" id="cancellation_value_0" name="cancellations[0][cancellation_value]" placeholder="Enter cancellation value" step="0.01" required>
                                         </div>
@@ -300,6 +312,18 @@
                                         </div>
                                     </div>
                                     <input type="hidden" id="customer_id_${entryCounter}" name="cancellations[${entryCounter}][customer_id]" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="staff_id_${entryCounter}">Staff</label>
+                                    <select class="form-control" id="staff_id_${entryCounter}" name="cancellations[${entryCounter}][staff_id]" required>
+                                        <option value="">-- Select Staff --</option>
+                                        @foreach($staff as $s)
+                                            <option value="{{ $s->id }}">{{ $s->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                             

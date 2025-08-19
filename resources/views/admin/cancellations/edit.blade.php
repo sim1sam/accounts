@@ -45,6 +45,25 @@
                             
                             <div class="col-md-4">
                                 <div class="form-group">
+                                    <label for="staff_id">Staff</label>
+                                    <select class="form-control @error('staff_id') is-invalid @enderror" id="staff_id" name="staff_id" required>
+                                        <option value="">-- Select Staff --</option>
+                                        @foreach($staff as $s)
+                                            <option value="{{ $s->id }}" {{ (old('staff_id', $cancellation->staff_id) == $s->id) ? 'selected' : '' }}>
+                                                {{ $s->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('staff_id')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
                                     <label for="cancellation_value">Cancellation Value</label>
                                     <input type="number" class="form-control @error('cancellation_value') is-invalid @enderror" id="cancellation_value" name="cancellation_value" value="{{ old('cancellation_value', $cancellation->cancellation_value) }}" placeholder="Enter cancellation value" step="0.01" required>
                                     @error('cancellation_value')
