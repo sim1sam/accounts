@@ -162,6 +162,7 @@ class AdminController extends Controller
     {
         $from = $request->query('from');
         $to = $request->query('to');
+        $staffId = $request->query('staff_id');
         try {
             $start = $from ? \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay() : now()->startOfMonth();
         } catch (\Throwable $e) {
@@ -176,18 +177,30 @@ class AdminController extends Controller
         $invoiceDateCol = Schema::hasColumn('invoices', 'invoice_date') ? 'invoice_date' : 'created_at';
         $cancellationDateCol = Schema::hasColumn('cancellations', 'cancellation_date') ? 'cancellation_date' : 'created_at';
 
-        $invoiceAgg = Invoice::selectRaw('staff_id, COALESCE(SUM(invoice_value),0) as total_invoice')
+        $invoiceQuery = Invoice::selectRaw('staff_id, COALESCE(SUM(invoice_value),0) as total_invoice')
             ->whereBetween($invoiceDateCol, [$start, $end])
-            ->groupBy('staff_id')
-            ->pluck('total_invoice', 'staff_id');
+            ->groupBy('staff_id');
+        if ($staffId !== null && $staffId !== '') {
+            $invoiceQuery->where('staff_id', $staffId);
+        }
+        $invoiceAgg = $invoiceQuery->pluck('total_invoice', 'staff_id');
 
-        $cancelAgg = Cancellation::selectRaw('staff_id, COALESCE(SUM(cancellation_value),0) as total_cancel')
+        $cancelQuery = Cancellation::selectRaw('staff_id, COALESCE(SUM(cancellation_value),0) as total_cancel')
             ->whereBetween($cancellationDateCol, [$start, $end])
-            ->groupBy('staff_id')
-            ->pluck('total_cancel', 'staff_id');
+            ->groupBy('staff_id');
+        if ($staffId !== null && $staffId !== '') {
+            $cancelQuery->where('staff_id', $staffId);
+        }
+        $cancelAgg = $cancelQuery->pluck('total_cancel', 'staff_id');
 
-        $staffIds = collect($invoiceAgg->keys())->merge($cancelAgg->keys())->unique()->values();
-        $staffMap = Staff::whereIn('id', $staffIds)->get(['id','name'])->keyBy('id');
+        $staffIds = collect($invoiceAgg->keys())->merge($cancelAgg->keys());
+        if ($staffId !== null && $staffId !== '') {
+            $staffIds = $staffIds->merge([(int) $staffId]);
+        }
+        $staffIds = $staffIds->unique()->values();
+        $staffMap = $staffIds->isNotEmpty()
+            ? Staff::whereIn('id', $staffIds)->get(['id','name'])->keyBy('id')
+            : collect();
         $rows = $staffIds->map(function($sid) use ($invoiceAgg, $cancelAgg, $staffMap){
             $inv = (float) ($invoiceAgg[$sid] ?? 0);
             $can = (float) ($cancelAgg[$sid] ?? 0);
@@ -200,10 +213,14 @@ class AdminController extends Controller
             ];
         })->sortByDesc('sale_total')->values();
 
+        $staffs = Staff::orderBy('name')->get(['id','name']);
+
         return view('admin.reports.staff_sales', [
             'rows' => $rows,
             'start' => $start->toDateString(),
             'end' => $end->toDateString(),
+            'staffs' => $staffs,
+            'selectedStaffId' => $staffId,
         ]);
     }
 }

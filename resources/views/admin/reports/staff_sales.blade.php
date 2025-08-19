@@ -21,7 +21,17 @@
                 <label for="to" class="mr-2">To</label>
                 <input type="date" class="form-control" id="to" name="to" value="{{ request('to', $end) }}">
             </div>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+            <div class="form-group mr-2">
+                <label for="staff_id" class="mr-2">Staff</label>
+                <select name="staff_id" id="staff_id" class="form-control">
+                    <option value="">All Staff</option>
+                    @foreach($staffs as $s)
+                        <option value="{{ $s->id }}" {{ (string)$selectedStaffId === (string)$s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary mr-2"><i class="fas fa-filter"></i> Filter</button>
+            <a href="{{ route('admin.reports.staff_sales') }}" class="btn btn-secondary">Reset</a>
         </form>
     </div>
     <div class="card-body p-0">
