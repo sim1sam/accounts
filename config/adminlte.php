@@ -452,6 +452,13 @@ return [
             'active' => ['admin/reports/ledger*'],
             'can' => 'menu.reports.ledger',
         ],
+        [
+            'text' => 'Staff Sales',
+            'url' => 'admin/reports/staff-sales',
+            'icon' => 'fas fa-fw fa-chart-line',
+            'active' => ['admin/reports/staff-sales*'],
+            'can' => 'menu.reports.ledger',
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 

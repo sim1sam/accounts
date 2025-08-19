@@ -170,6 +170,49 @@
                 <!-- /.card-footer -->
             </div>
             <!-- /.card -->
+            
+            <!-- Top Staff Sales (This Month) -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Top Staff Sales (This Month)</h3>
+                    <a href="{{ route('admin.reports.staff_sales') }}" class="btn btn-sm btn-outline-primary">View Full Report</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table m-0">
+                            <thead>
+                                <tr>
+                                    <th>Staff</th>
+                                    <th class="text-right">Invoice</th>
+                                    <th class="text-right">Cancel</th>
+                                    <th class="text-right">Sale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse(($staffSales ?? []) as $row)
+                                    <tr>
+                                        <td>
+                                            @if(!empty($row['staff_id']))
+                                                <a href="{{ route('admin.staff.show', $row['staff_id']) }}">{{ $row['staff_name'] }}</a>
+                                            @else
+                                                <span class="text-muted">{{ $row['staff_name'] }} (Unassigned)</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-right">৳ {{ number_format($row['invoice_total'], 2) }}</td>
+                                        <td class="text-right text-danger">৳ {{ number_format($row['cancel_total'], 2) }}</td>
+                                        <td class="text-right font-weight-bold">৳ {{ number_format($row['sale_total'], 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No sales yet this month.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- /.card -->
 
             <!-- Recent Customers -->
             <div class="card">

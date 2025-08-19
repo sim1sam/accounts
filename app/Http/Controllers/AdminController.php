@@ -10,6 +10,8 @@ use Carbon\Carbon;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Expense;
+use App\Models\Cancellation;
+use App\Models\Staff;
 
 class AdminController extends Controller
 {
@@ -20,7 +22,41 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
-        return view('admin.dashboard');
+        // Default period: current month
+        $start = now()->startOfMonth();
+        $end = now()->endOfMonth();
+
+        // Resolve date columns if present
+        $invoiceDateCol = Schema::hasColumn('invoices', 'invoice_date') ? 'invoice_date' : 'created_at';
+        $cancellationDateCol = Schema::hasColumn('cancellations', 'cancellation_date') ? 'cancellation_date' : 'created_at';
+
+        // Aggregates by staff for current month
+        $invoiceAgg = Invoice::selectRaw('staff_id, COALESCE(SUM(invoice_value),0) as total_invoice')
+            ->whereBetween($invoiceDateCol, [$start, $end])
+            ->groupBy('staff_id')
+            ->pluck('total_invoice', 'staff_id');
+
+        $cancelAgg = Cancellation::selectRaw('staff_id, COALESCE(SUM(cancellation_value),0) as total_cancel')
+            ->whereBetween($cancellationDateCol, [$start, $end])
+            ->groupBy('staff_id')
+            ->pluck('total_cancel', 'staff_id');
+
+        // Build combined list for top 10 staff
+        $staffIds = collect($invoiceAgg->keys())->merge($cancelAgg->keys())->unique()->values();
+        $staffMap = Staff::whereIn('id', $staffIds)->get(['id','name'])->keyBy('id');
+        $staffSales = $staffIds->map(function($sid) use ($invoiceAgg, $cancelAgg, $staffMap){
+            $inv = (float) ($invoiceAgg[$sid] ?? 0);
+            $can = (float) ($cancelAgg[$sid] ?? 0);
+            return [
+                'staff_id' => $sid,
+                'staff_name' => optional($staffMap->get($sid))->name ?? 'Unknown',
+                'invoice_total' => $inv,
+                'cancel_total' => $can,
+                'sale_total' => $inv - $can,
+            ];
+        })->sortByDesc('sale_total')->values()->take(10);
+
+        return view('admin.dashboard', compact('staffSales'));
     }
 
     /**
@@ -117,5 +153,57 @@ class AdminController extends Controller
                 'expenses' => []
             ], 500);
         }
+    }
+
+    /**
+     * Staff-wise sales report (invoice - cancellation) with optional period filters.
+     */
+    public function staffSales(Request $request)
+    {
+        $from = $request->query('from');
+        $to = $request->query('to');
+        try {
+            $start = $from ? \Carbon\Carbon::createFromFormat('Y-m-d', $from)->startOfDay() : now()->startOfMonth();
+        } catch (\Throwable $e) {
+            $start = now()->startOfMonth();
+        }
+        try {
+            $end = $to ? \Carbon\Carbon::createFromFormat('Y-m-d', $to)->endOfDay() : now()->endOfMonth();
+        } catch (\Throwable $e) {
+            $end = now()->endOfMonth();
+        }
+
+        $invoiceDateCol = Schema::hasColumn('invoices', 'invoice_date') ? 'invoice_date' : 'created_at';
+        $cancellationDateCol = Schema::hasColumn('cancellations', 'cancellation_date') ? 'cancellation_date' : 'created_at';
+
+        $invoiceAgg = Invoice::selectRaw('staff_id, COALESCE(SUM(invoice_value),0) as total_invoice')
+            ->whereBetween($invoiceDateCol, [$start, $end])
+            ->groupBy('staff_id')
+            ->pluck('total_invoice', 'staff_id');
+
+        $cancelAgg = Cancellation::selectRaw('staff_id, COALESCE(SUM(cancellation_value),0) as total_cancel')
+            ->whereBetween($cancellationDateCol, [$start, $end])
+            ->groupBy('staff_id')
+            ->pluck('total_cancel', 'staff_id');
+
+        $staffIds = collect($invoiceAgg->keys())->merge($cancelAgg->keys())->unique()->values();
+        $staffMap = Staff::whereIn('id', $staffIds)->get(['id','name'])->keyBy('id');
+        $rows = $staffIds->map(function($sid) use ($invoiceAgg, $cancelAgg, $staffMap){
+            $inv = (float) ($invoiceAgg[$sid] ?? 0);
+            $can = (float) ($cancelAgg[$sid] ?? 0);
+            return (object) [
+                'staff_id' => $sid,
+                'staff_name' => optional($staffMap->get($sid))->name ?? 'Unknown',
+                'invoice_total' => $inv,
+                'cancel_total' => $can,
+                'sale_total' => $inv - $can,
+            ];
+        })->sortByDesc('sale_total')->values();
+
+        return view('admin.reports.staff_sales', [
+            'rows' => $rows,
+            'start' => $start->toDateString(),
+            'end' => $end->toDateString(),
+        ]);
     }
 }

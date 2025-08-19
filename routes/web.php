@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Ledger Report Routes
     Route::get('/admin/reports/ledger', [LedgerReportController::class, 'index'])->name('admin.reports.ledger');
+    Route::get('/admin/reports/staff-sales', [AdminController::class, 'staffSales'])->name('admin.reports.staff_sales');
 
     // User & Permissions Management
     Route::get('/admin/users/create', [UserPermissionController::class, 'create'])->name('admin.users.create');
