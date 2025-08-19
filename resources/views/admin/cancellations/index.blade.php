@@ -43,6 +43,9 @@
                                     <a href="{{ route('admin.cancellations.edit', $cancellation->id) }}" class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    <a href="{{ route('admin.refunds.create', ['from_cancellation' => $cancellation->id]) }}" class="btn btn-sm btn-success" title="Transfer to Refund">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
                                     <form action="{{ route('admin.cancellations.destroy', $cancellation->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this cancellation?');" style="display: inline;">
                                         @csrf
                                         @method('DELETE')

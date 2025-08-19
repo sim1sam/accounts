@@ -66,6 +66,16 @@
                                             <th>Remarks</th>
                                             <td>{{ $refund->remarks ?? 'N/A' }}</td>
                                         </tr>
+                                        @if($refund->cancellation)
+                                        <tr>
+                                            <th>From Cancellation</th>
+                                            <td>
+                                                <a href="{{ route('admin.cancellations.show', $refund->cancellation->id) }}">
+                                                    Cancellation #{{ $refund->cancellation->id }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        @endif
                                         <tr>
                                             <th>Created At</th>
                                             <td>{{ $refund->created_at->format('Y-m-d H:i:s') }}</td>

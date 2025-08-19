@@ -47,7 +47,7 @@
                                     <label for="customer_select">Select Customer</label>
                                     <div class="dropdown">
                                         <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown_0" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
-                                            <span id="selectedCustomerText_0">-- Select Customer --</span>
+                                            <span id="selectedCustomerText_0">{{ isset($prefill) ? ($prefill['customer_mobile'] . ' - ' . $prefill['customer_name']) : '-- Select Customer --' }}</span>
                                             <span class="caret float-right mt-1"></span>
                                         </button>
                                         <div class="dropdown-menu w-100" aria-labelledby="customerDropdown_0" style="max-height: 300px; overflow-y: auto;">
@@ -62,7 +62,10 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <input type="hidden" id="customer_id_0" name="refunds[0][customer_id]" required>
+                                    <input type="hidden" id="customer_id_0" name="refunds[0][customer_id]" value="{{ isset($prefill) ? $prefill['customer_id'] : '' }}" required>
+                                    @if(isset($prefill) && isset($prefill['cancellation_id']))
+                                        <input type="hidden" id="cancellation_id_0" name="refunds[0][cancellation_id]" value="{{ $prefill['cancellation_id'] }}">
+                                    @endif
                                 </div>
                             </div>
                             
@@ -73,7 +76,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="currencyPrefix_0">BDT</span>
                                         </div>
-                                        <input type="number" class="form-control @error('refunds.0.refund_amount') is-invalid @enderror" id="refund_amount_0" name="refunds[0][refund_amount]" value="{{ old('refunds.0.refund_amount') }}" placeholder="Enter amount" step="0.01" required>
+                                        <input type="number" class="form-control @error('refunds.0.refund_amount') is-invalid @enderror" id="refund_amount_0" name="refunds[0][refund_amount]" value="{{ old('refunds.0.refund_amount', isset($prefill) ? $prefill['refund_amount'] : null) }}" placeholder="Enter amount" step="0.01" required>
                                         @error('refund_amount')
                                             <span class="invalid-feedback" role="alert">
                                                 <strong>{{ $message }}</strong>
@@ -88,7 +91,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="refund_date">Refund Date</label>
-                                    <input type="date" class="form-control @error('refunds.0.refund_date') is-invalid @enderror" id="refund_date_0" name="refunds[0][refund_date]" value="{{ old('refunds.0.refund_date', date('Y-m-d')) }}" required>
+                                    <input type="date" class="form-control @error('refunds.0.refund_date') is-invalid @enderror" id="refund_date_0" name="refunds[0][refund_date]" value="{{ old('refunds.0.refund_date', isset($prefill) ? $prefill['refund_date'] : date('Y-m-d')) }}" required>
                                     @error('refunds.0.refund_date')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
@@ -121,7 +124,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="remarks">Remarks</label>
-                                    <textarea class="form-control @error('refunds.0.remarks') is-invalid @enderror" id="remarks_0" name="refunds[0][remarks]" rows="3" placeholder="Enter remarks">{{ old('refunds.0.remarks') }}</textarea>
+                                    <textarea class="form-control @error('refunds.0.remarks') is-invalid @enderror" id="remarks_0" name="refunds[0][remarks]" rows="3" placeholder="Enter remarks">{{ old('refunds.0.remarks', isset($prefill) ? $prefill['remarks'] : '') }}</textarea>
                                     @error('remarks')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
@@ -264,6 +267,8 @@
                     const refundAmount = $(`#refund_amount_${entryId}`).val();
                     const refundDate = $(`#refund_date_${entryId}`).val();
                     const remarks = $(`#remarks_${entryId}`).val();
+                    const cancellationIdField = $(`#cancellation_id_${entryId}`);
+                    const cancellationId = cancellationIdField.length ? cancellationIdField.val() : '';
                     
                     console.log(`Entry #${index+1} data:`, {
                         customer_id: customerId,
@@ -308,13 +313,17 @@
                     
                     // Add this entry's data to the refundsData array
                     if (customerId && bankId && refundAmount && refundDate) {
-                        refundsData.push({
+                        const entry = {
                             customer_id: customerId,
                             bank_id: bankId,
                             refund_amount: refundAmount,
                             refund_date: refundDate,
                             remarks: remarks
-                        });
+                        };
+                        if (cancellationId) {
+                            entry.cancellation_id = cancellationId;
+                        }
+                        refundsData.push(entry);
                     }
                 });
                 

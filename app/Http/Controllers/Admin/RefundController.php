@@ -29,7 +29,26 @@ class RefundController extends Controller
     {
         $customers = Customer::all();
         $banks = Bank::with('currency')->where('is_active', true)->get();
-        return view('admin.refunds.create', compact('customers', 'banks'));
+
+        // Optional prefill from a cancellation
+        $prefill = null;
+        $fromCancellation = request()->get('from_cancellation');
+        if ($fromCancellation) {
+            $cancellation = \App\Models\Cancellation::with('customer')->find($fromCancellation);
+            if ($cancellation) {
+                $prefill = [
+                    'customer_id' => $cancellation->customer_id,
+                    'refund_amount' => (float) $cancellation->cancellation_value,
+                    'refund_date' => now()->toDateString(),
+                    'remarks' => 'Refund for Cancellation #' . $cancellation->id,
+                    'cancellation_id' => $cancellation->id,
+                    'customer_name' => optional($cancellation->customer)->name,
+                    'customer_mobile' => optional($cancellation->customer)->mobile,
+                ];
+            }
+        }
+
+        return view('admin.refunds.create', compact('customers', 'banks', 'prefill'));
     }
 
     /**
@@ -57,7 +76,8 @@ class RefundController extends Controller
                     'bank_id' => 'required|exists:banks,id',
                     'refund_amount' => 'required|numeric|min:0',
                     'refund_date' => 'required|date',
-                    'remarks' => 'nullable|string'
+                    'remarks' => 'nullable|string',
+                    'cancellation_id' => 'nullable|exists:cancellations,id'
                 ]);
                 
                 if ($validator->fails()) {
@@ -122,7 +142,8 @@ class RefundController extends Controller
                 'bank_id' => 'required|exists:banks,id',
                 'refund_amount' => 'required|numeric|min:0',
                 'refund_date' => 'required|date',
-                'remarks' => 'nullable|string'
+                'remarks' => 'nullable|string',
+                'cancellation_id' => 'nullable|exists:cancellations,id'
             ]);
 
             DB::beginTransaction();
@@ -136,7 +157,7 @@ class RefundController extends Controller
                 $amountBDT = $isBDT ? $inputAmount : $inputAmount * $rate; // store in BDT
 
                 // Create refund storing BDT amount
-                $dataToCreate = $request->only(['customer_id','bank_id','refund_date','remarks']);
+                $dataToCreate = $request->only(['customer_id','bank_id','refund_date','remarks','cancellation_id']);
                 $dataToCreate['refund_amount'] = $amountBDT;
                 $refund = Refund::create($dataToCreate);
 
@@ -176,7 +197,7 @@ class RefundController extends Controller
      */
     public function show(string $id)
     {
-        $refund = Refund::with(['customer', 'bank.currency'])->findOrFail($id);
+        $refund = Refund::with(['customer', 'bank.currency', 'cancellation'])->findOrFail($id);
         return view('admin.refunds.show', compact('refund'));
     }
 
