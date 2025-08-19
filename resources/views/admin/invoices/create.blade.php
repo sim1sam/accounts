@@ -80,6 +80,32 @@
                                     </div>
                                 </div>
                                 
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="staff_select_0">Select Staff</label>
+                                            <div class="dropdown">
+                                                <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="staffDropdown_0" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                                    <span id="selectedStaffText_0">-- Select Staff --</span>
+                                                    <span class="caret float-right mt-1"></span>
+                                                </button>
+                                                <div class="dropdown-menu w-100" aria-labelledby="staffDropdown_0" style="max-height: 300px; overflow-y: auto;">
+                                                    <input type="text" class="form-control mb-2 mx-2 staff-search" id="staff_search_0" placeholder="Search by name or phone" style="width: 95%;">
+                                                    <div class="dropdown-divider"></div>
+                                                    <div id="staffOptions_0">
+                                                        @foreach($staff as $s)
+                                                            <a class="dropdown-item staff-option" href="#" data-id="{{ $s->id }}" data-phone="{{ $s->phone }}" data-name="{{ $s->name }}">
+                                                                {{ $s->name }} @if($s->phone) - {{ $s->phone }} @endif
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="staff_id_0" name="invoices[0][staff_id]" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div id="customerDetails_0" style="display: none;">
                                     <div class="card card-info">
                                         <div class="card-header">
@@ -197,7 +223,7 @@
             // Fix dropdown initialization
             $('.dropdown-toggle').dropdown();
             
-            // Handle customer search for the first entry
+            // Handle customer search
             $(document).on('keyup', '.customer-search', function(e) {
                 e.stopPropagation();
                 const searchText = $(this).val().toLowerCase();
@@ -213,8 +239,27 @@
                 });
             });
             
+            // Handle staff search
+            $(document).on('keyup', '.staff-search', function(e) {
+                e.stopPropagation();
+                const searchText = $(this).val().toLowerCase();
+                const entryId = $(this).closest('.invoice-entry').data('entry-id');
+                
+                $(`#staffOptions_${entryId} .staff-option`).each(function() {
+                    const optionText = $(this).text().toLowerCase();
+                    if (optionText.indexOf(searchText) > -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+            
             // Prevent dropdown from closing when clicking on search input
             $(document).on('click', '.customer-search', function(e) {
+                e.stopPropagation();
+            });
+            $(document).on('click', '.staff-search', function(e) {
                 e.stopPropagation();
             });
             
@@ -238,6 +283,22 @@
                 
                 // Trigger the customer selection event
                 selectCustomer(customerMobile, entryId);
+            });
+
+            // Handle staff selection
+            $(document).on('click', '.staff-option', function(e) {
+                e.preventDefault();
+                const staffId = $(this).data('id');
+                const staffName = $(this).data('name');
+                const staffPhone = $(this).data('phone') || '';
+
+                const invoiceEntry = $(this).closest('.invoice-entry');
+                const entryId = invoiceEntry.data('entry-id');
+
+                $(`#selectedStaffText_${entryId}`).text(staffName + (staffPhone ? ' - ' + staffPhone : ''));
+                $(`#staff_id_${entryId}`).val(staffId);
+
+                $(`#staffDropdown_${entryId}`).dropdown('toggle');
             });
             
             // Function to select a customer and fetch details
@@ -319,6 +380,32 @@
                                 <div class="form-group">
                                     <label for="invoice_value_${entryCounter}">Invoice Value</label>
                                     <input type="number" step="0.01" class="form-control" id="invoice_value_${entryCounter}" name="invoices[${entryCounter}][invoice_value]" placeholder="Enter invoice value" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="staff_select_${entryCounter}">Select Staff</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="staffDropdown_${entryCounter}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                            <span id="selectedStaffText_${entryCounter}">-- Select Staff --</span>
+                                            <span class="caret float-right mt-1"></span>
+                                        </button>
+                                        <div class="dropdown-menu w-100" aria-labelledby="staffDropdown_${entryCounter}" style="max-height: 300px; overflow-y: auto;">
+                                            <input type="text" class="form-control mb-2 mx-2 staff-search" id="staff_search_${entryCounter}" placeholder="Search by name or phone" style="width: 95%;">
+                                            <div class="dropdown-divider"></div>
+                                            <div id="staffOptions_${entryCounter}">
+                                                @foreach($staff as $s)
+                                                    <a class="dropdown-item staff-option" href="#" data-id="{{ $s->id }}" data-phone="{{ $s->phone }}" data-name="{{ $s->name }}">
+                                                        {{ $s->name }} @if($s->phone) - {{ $s->phone }} @endif
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="staff_id_${entryCounter}" name="invoices[${entryCounter}][staff_id]" required>
                                 </div>
                             </div>
                         </div>

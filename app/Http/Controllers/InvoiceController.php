@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\Customer;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -25,8 +26,10 @@ class InvoiceController extends Controller
     {
         // Get all customers for the dropdown
         $customers = Customer::orderBy('name')->get();
+        // Get all staff for the dropdown
+        $staff = Staff::orderBy('name')->get();
         
-        return view('admin.invoices.create', compact('customers'));
+        return view('admin.invoices.create', compact('customers', 'staff'));
     }
 
     /**
@@ -44,6 +47,7 @@ class InvoiceController extends Controller
                 $validator = validator($invoiceData, [
                     'invoice_id' => 'required|string|unique:invoices,invoice_id',
                     'customer_id' => 'required|exists:customers,id',
+                    'staff_id' => 'required|exists:staff,id',
                     'invoice_value' => 'required|numeric|min:0',
                 ]);
                 
@@ -55,6 +59,7 @@ class InvoiceController extends Controller
                 Invoice::create([
                     'invoice_id' => $invoiceData['invoice_id'],
                     'customer_id' => $invoiceData['customer_id'],
+                    'staff_id' => $invoiceData['staff_id'],
                     'invoice_value' => $invoiceData['invoice_value'],
                 ]);
                 
@@ -72,12 +77,14 @@ class InvoiceController extends Controller
             $request->validate([
                 'invoice_id' => 'required|string|unique:invoices,invoice_id',
                 'customer_id' => 'required|exists:customers,id',
+                'staff_id' => 'required|exists:staff,id',
                 'invoice_value' => 'required|numeric|min:0',
             ]);
             
             $invoice = Invoice::create([
                 'invoice_id' => $request->invoice_id,
                 'customer_id' => $request->customer_id,
+                'staff_id' => $request->staff_id,
                 'invoice_value' => $request->invoice_value,
             ]);
             
@@ -91,7 +98,7 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
-        $invoice->load('customer');
+        $invoice->load('customer', 'staff');
         return view('admin.invoices.show', compact('invoice'));
     }
 
@@ -100,8 +107,10 @@ class InvoiceController extends Controller
      */
     public function edit(Invoice $invoice)
     {
-        $invoice->load('customer');
-        return view('admin.invoices.edit', compact('invoice'));
+        $invoice->load('customer', 'staff');
+        $customers = Customer::orderBy('name')->get();
+        $staff = Staff::orderBy('name')->get();
+        return view('admin.invoices.edit', compact('invoice', 'customers', 'staff'));
     }
 
     /**
@@ -112,11 +121,15 @@ class InvoiceController extends Controller
         $request->validate([
             'invoice_id' => 'required|string|unique:invoices,invoice_id,' . $invoice->id,
             'invoice_value' => 'required|numeric|min:0',
+            'customer_id' => 'nullable|exists:customers,id',
+            'staff_id' => 'nullable|exists:staff,id',
         ]);
         
         $invoice->update([
             'invoice_id' => $request->invoice_id,
             'invoice_value' => $request->invoice_value,
+            'customer_id' => $request->customer_id ?? $invoice->customer_id,
+            'staff_id' => $request->staff_id ?? $invoice->staff_id,
         ]);
         
         return redirect()->route('admin.invoices.index')

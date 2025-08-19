@@ -14,6 +14,7 @@ class Invoice extends Model
     protected $fillable = [
         'invoice_id',
         'customer_id',
+        'staff_id',
         'invoice_value',
     ];
 
@@ -23,5 +24,13 @@ class Invoice extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Get the staff member associated with the invoice.
+     */
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class);
     }
 }
