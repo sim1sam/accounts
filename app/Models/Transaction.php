@@ -15,11 +15,14 @@ class Transaction extends Model
         'transaction_date',
         'reference_type',
         'reference_id',
+        'voided_at',
+        'void_reason',
     ];
     
     protected $casts = [
         'transaction_date' => 'date',
         'amount' => 'decimal:2',
+        'voided_at' => 'datetime',
     ];
     
     public function payment()
@@ -38,5 +41,10 @@ class Transaction extends Model
     public function reference()
     {
         return $this->morphTo('reference');
+    }
+
+    public function getIsVoidedAttribute(): bool
+    {
+        return !is_null($this->voided_at);
     }
 }

@@ -140,6 +140,7 @@ Route::middleware(['auth'])->group(function () {
     // Transaction Routes
     Route::get('/admin/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
     Route::get('/admin/transactions/{transaction}', [TransactionController::class, 'show'])->name('admin.transactions.show');
+    Route::post('/admin/transactions/{transaction}/void', [TransactionController::class, 'void'])->name('admin.transactions.void');
     
     // Budget Routes
     Route::get('/admin/budgets', [BudgetController::class, 'index'])->name('admin.budgets.index');

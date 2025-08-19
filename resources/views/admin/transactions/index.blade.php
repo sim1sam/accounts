@@ -22,6 +22,16 @@
                             {{ session('success') }}
                         </div>
                     @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
                     
                     <table class="table table-bordered table-striped">
                         <thead>
@@ -32,6 +42,7 @@
                                 <th>Amount</th>
                                 <th>Type</th>
                                 <th>Description</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -69,9 +80,28 @@
                                     </td>
                                     <td>{{ $transaction->description }}</td>
                                     <td>
+                                        @if($transaction->voided_at)
+                                            <span class="badge badge-secondary">Voided</span>
+                                        @else
+                                            <span class="badge badge-success">Active</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <a href="{{ route('admin.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i> View
                                         </a>
+                                        @if(!$transaction->voided_at)
+                                        <form action="{{ route('admin.transactions.void', $transaction->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Void this transaction and revert the amount?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-ban"></i> Void
+                                            </button>
+                                        </form>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-default" disabled>
+                                                <i class="fas fa-ban"></i> Void
+                                            </button>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
