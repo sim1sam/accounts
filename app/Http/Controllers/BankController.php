@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bank;
+use App\Models\BankDailyBalance;
 use App\Models\Currency;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class BankController extends Controller
 {
@@ -175,5 +177,81 @@ class BankController extends Controller
         
         return redirect()->route('admin.banks.show', $bank->id)
             ->with($success ? 'success' : 'error', $message);
+    }
+
+    /**
+     * Show compare page with system vs physical balances per bank for a given date.
+     */
+    public function compareIndex(Request $request)
+    {
+        $date = $request->query('date') ? Carbon::parse($request->query('date'))->toDateString() : Carbon::today()->toDateString();
+        $banks = Bank::with('currency')->orderBy('name')->get();
+        $existing = BankDailyBalance::where('date', $date)->get()->keyBy('bank_id');
+
+        return view('admin.banks.compare', compact('banks', 'date', 'existing'));
+    }
+
+    /**
+     * Store/update physical balances for the compare page.
+     */
+    public function compareStore(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'banks' => 'required|array',
+            'banks.*.physical_amount' => 'nullable|numeric|min:0',
+            'banks.*.note' => 'nullable|string|max:1000',
+        ]);
+
+        $date = Carbon::parse($validated['date'])->toDateString();
+        $banksInput = $validated['banks'];
+
+        // Fetch banks once
+        $banks = Bank::with('currency')->whereIn('id', array_keys($banksInput))->get()->keyBy('id');
+
+        foreach ($banksInput as $bankId => $payload) {
+            if (!isset($banks[$bankId])) continue;
+            $bank = $banks[$bankId];
+            $physical = isset($payload['physical_amount']) && $payload['physical_amount'] !== null
+                ? (float)$payload['physical_amount'] : null;
+            $note = $payload['note'] ?? null;
+
+            if ($physical === null) {
+                // skip if not provided
+                continue;
+            }
+
+            $rate = $bank->currency ? (float)($bank->currency->conversion_rate ?? 1) : 1.0;
+            if ($rate <= 0) { $rate = 1.0; }
+
+            // Convert physical to BDT if needed
+            $physicalBDT = $bank->currency && ($bank->currency->code !== 'BDT')
+                ? $physical * $rate
+                : $physical;
+
+            // System BDT snapshot
+            $systemBDT = $bank->amount_in_bdt ?? (($bank->currency && $bank->currency->code !== 'BDT')
+                ? ((float)($bank->current_balance ?? 0)) * $rate
+                : (float)($bank->current_balance ?? 0));
+
+            $differenceBDT = $physicalBDT - (float)$systemBDT;
+
+            BankDailyBalance::updateOrCreate(
+                [
+                    'bank_id' => $bank->id,
+                    'date' => $date,
+                ],
+                [
+                    'physical_amount' => $physical,
+                    'physical_amount_bdt' => $physicalBDT,
+                    'system_amount_bdt' => $systemBDT,
+                    'difference_bdt' => $differenceBDT,
+                    'note' => $note,
+                    'created_by' => optional(auth()->user())->id,
+                ]
+            );
+        }
+
+        return redirect()->route('admin.banks.compare', ['date' => $date])->with('success', 'Daily bank balances saved.');
     }
 }

@@ -13,6 +13,7 @@ return [
         'menu.cancellations',
         'menu.refunds',
         'menu.banks',
+        'menu.bank_compare',
         'menu.currencies',
         'menu.accounts',
         'menu.expenses',

@@ -404,6 +404,13 @@ return [
             'can' => 'menu.banks',
         ],
         [
+            'text' => 'Bank Compare',
+            'url' => 'admin/banks/compare',
+            'icon' => 'fas fa-fw fa-balance-scale',
+            'active' => ['admin/banks/compare*'],
+            'can' => 'menu.bank_compare',
+        ],
+        [
             'text' => 'Currency',
             'url' => 'admin/currencies',
             'icon' => 'fas fa-fw fa-money-bill-alt',
