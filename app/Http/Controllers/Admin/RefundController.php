@@ -16,10 +16,49 @@ class RefundController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $refunds = Refund::with(['customer', 'bank.currency'])->latest()->get();
-        return view('admin.refunds.index', compact('refunds'));
+        $query = Refund::query()->with(['customer', 'bank.currency'])->latest();
+
+        // Free text search: customer name/mobile or remarks
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->whereHas('customer', function ($c) use ($q) {
+                        $c->where('name', 'like', "%{$q}%")
+                          ->orWhere('mobile', 'like', "%{$q}%");
+                    })
+                  ->orWhere('remarks', 'like', "%{$q}%");
+            });
+        }
+
+        // Bank filter
+        if ($request->filled('bank_id')) {
+            $query->where('bank_id', $request->integer('bank_id'));
+        }
+
+        // Refund date range
+        if ($request->filled('refund_date_from')) {
+            $query->whereDate('refund_date', '>=', $request->date('refund_date_from'));
+        }
+        if ($request->filled('refund_date_to')) {
+            $query->whereDate('refund_date', '<=', $request->date('refund_date_to'));
+        }
+
+        // Amount range (values stored in BDT)
+        if ($request->filled('min_amount')) {
+            $query->where('refund_amount', '>=', (float) $request->get('min_amount'));
+        }
+        if ($request->filled('max_amount')) {
+            $query->where('refund_amount', '<=', (float) $request->get('max_amount'));
+        }
+
+        $refunds = $query->paginate(10)->withQueryString();
+
+        // Banks for filter dropdown
+        $banks = Bank::with('currency')->where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.refunds.index', compact('refunds', 'banks'));
     }
 
     /**

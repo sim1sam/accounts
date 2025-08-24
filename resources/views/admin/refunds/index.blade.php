@@ -17,6 +17,45 @@
                     {{ session('success') }}
                 </div>
             @endif
+            <form method="GET" action="{{ route('admin.refunds.index') }}" class="mb-3">
+                <div class="form-row">
+                    <div class="col-md-4 mb-2">
+                        <label for="q" class="sr-only">Search</label>
+                        <input type="text" name="q" id="q" value="{{ request('q') }}" class="form-control" placeholder="Search customer name, mobile, or remarks">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <select name="bank_id" id="bank_id" class="form-control">
+                            <option value="">-- All Banks --</option>
+                            @isset($banks)
+                                @foreach($banks as $b)
+                                    @php $code = optional($b->currency)->code; @endphp
+                                    <option value="{{ $b->id }}" {{ (string)request('bank_id') === (string)$b->id ? 'selected' : '' }}>
+                                        {{ $b->name }} @if($code) ({{ strtoupper($code) }}) @endif
+                                    </option>
+                                @endforeach
+                            @endisset
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <input type="date" name="refund_date_from" id="refund_date_from" value="{{ request('refund_date_from') }}" class="form-control" placeholder="From">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <input type="date" name="refund_date_to" id="refund_date_to" value="{{ request('refund_date_to') }}" class="form-control" placeholder="To">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-2 mb-2">
+                        <input type="number" step="0.01" name="min_amount" id="min_amount" value="{{ request('min_amount') }}" class="form-control" placeholder="Min amount">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <input type="number" step="0.01" name="max_amount" id="max_amount" value="{{ request('max_amount') }}" class="form-control" placeholder="Max amount">
+                    </div>
+                    <div class="col-md-4 mb-2 d-flex align-items-center">
+                        <button type="submit" class="btn btn-primary mr-2"><i class="fas fa-search"></i> Search</button>
+                        <a href="{{ route('admin.refunds.index') }}" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                    </div>
+                </div>
+            </form>
 
             <table class="table table-bordered table-striped">
                 <thead>
@@ -74,6 +113,9 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="mt-3">
+                {{ $refunds->links() }}
+            </div>
         </div>
     </div>
 @stop
