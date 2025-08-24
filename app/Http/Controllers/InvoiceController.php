@@ -14,10 +14,49 @@ class InvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $invoices = Invoice::with('customer')->latest()->paginate(10);
-        return view('admin.invoices.index', compact('invoices'));
+        $query = Invoice::query()->with(['customer', 'staff'])->latest();
+
+        // Free text search: invoice_id or customer name/mobile
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('invoice_id', 'like', "%{$q}%")
+                  ->orWhereHas('customer', function ($c) use ($q) {
+                      $c->where('name', 'like', "%{$q}%")
+                        ->orWhere('mobile', 'like', "%{$q}%");
+                  });
+            });
+        }
+
+        // Staff filter
+        if ($request->filled('staff_id')) {
+            $query->where('staff_id', $request->integer('staff_id'));
+        }
+
+        // Invoice date range filters
+        if ($request->filled('invoice_date_from')) {
+            $query->whereDate('invoice_date', '>=', $request->date('invoice_date_from'));
+        }
+        if ($request->filled('invoice_date_to')) {
+            $query->whereDate('invoice_date', '<=', $request->date('invoice_date_to'));
+        }
+
+        // Invoice value range
+        if ($request->filled('min_value')) {
+            $query->where('invoice_value', '>=', (float) $request->get('min_value'));
+        }
+        if ($request->filled('max_value')) {
+            $query->where('invoice_value', '<=', (float) $request->get('max_value'));
+        }
+
+        $invoices = $query->paginate(10)->withQueryString();
+
+        // Staff list for filter dropdown
+        $staff = Staff::orderBy('name')->get();
+
+        return view('admin.invoices.index', compact('invoices', 'staff'));
     }
 
     /**
