@@ -13,10 +13,49 @@ class CancellationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $cancellations = Cancellation::with('customer')->latest()->get();
-        return view('admin.cancellations.index', compact('cancellations'));
+        $query = Cancellation::query()->with(['customer', 'staff'])->latest();
+
+        // Free text search: customer name/mobile or remarks
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->whereHas('customer', function ($c) use ($q) {
+                        $c->where('name', 'like', "%{$q}%")
+                          ->orWhere('mobile', 'like', "%{$q}%");
+                    })
+                  ->orWhere('remarks', 'like', "%{$q}%");
+            });
+        }
+
+        // Staff filter
+        if ($request->filled('staff_id')) {
+            $query->where('staff_id', $request->integer('staff_id'));
+        }
+
+        // Cancellation date range
+        if ($request->filled('cancellation_date_from')) {
+            $query->whereDate('cancellation_date', '>=', $request->date('cancellation_date_from'));
+        }
+        if ($request->filled('cancellation_date_to')) {
+            $query->whereDate('cancellation_date', '<=', $request->date('cancellation_date_to'));
+        }
+
+        // Cancellation value range
+        if ($request->filled('min_value')) {
+            $query->where('cancellation_value', '>=', (float) $request->get('min_value'));
+        }
+        if ($request->filled('max_value')) {
+            $query->where('cancellation_value', '<=', (float) $request->get('max_value'));
+        }
+
+        $cancellations = $query->paginate(10)->withQueryString();
+
+        // Staff list for filter dropdown
+        $staff = Staff::orderBy('name')->get();
+
+        return view('admin.cancellations.index', compact('cancellations', 'staff'));
     }
 
     /**
