@@ -18,10 +18,47 @@ class ExpenseController extends Controller
     /**
      * Display a listing of the expenses.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $expenses = Expense::with(['account','currency'])->latest()->paginate(15);
-        return view('admin.expenses.index', compact('expenses'));
+        $query = Expense::query()->with(['account','currency'])->latest();
+
+        // Free text search: account name or remarks
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->whereHas('account', function ($a) use ($q) {
+                        $a->where('name', 'like', "%{$q}%");
+                    })
+                  ->orWhere('remarks', 'like', "%{$q}%");
+            });
+        }
+
+        // Account filter
+        if ($request->filled('account_id')) {
+            $query->where('account_id', $request->integer('account_id'));
+        }
+
+        // Expense date range
+        if ($request->filled('expense_date_from')) {
+            $query->whereDate('expense_date', '>=', $request->date('expense_date_from'));
+        }
+        if ($request->filled('expense_date_to')) {
+            $query->whereDate('expense_date', '<=', $request->date('expense_date_to'));
+        }
+
+        // Amount range (BDT)
+        if ($request->filled('min_amount')) {
+            $query->where('amount_in_bdt', '>=', (float) $request->get('min_amount'));
+        }
+        if ($request->filled('max_amount')) {
+            $query->where('amount_in_bdt', '<=', (float) $request->get('max_amount'));
+        }
+
+        $expenses = $query->paginate(15)->withQueryString();
+
+        $accounts = Account::orderBy('name')->get();
+
+        return view('admin.expenses.index', compact('expenses', 'accounts'));
     }
 
     /**
