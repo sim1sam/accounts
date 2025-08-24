@@ -169,6 +169,7 @@ class InvoiceController extends Controller
             'invoice_value' => 'required|numeric|min:0',
             'customer_id' => 'nullable|exists:customers,id',
             'staff_id' => 'nullable|exists:staff,id',
+            'invoice_date' => 'nullable|date',
         ]);
         
         $invoice->update([
@@ -176,6 +177,7 @@ class InvoiceController extends Controller
             'invoice_value' => $request->invoice_value,
             'customer_id' => $request->customer_id ?? $invoice->customer_id,
             'staff_id' => $request->staff_id ?? $invoice->staff_id,
+            'invoice_date' => $request->invoice_date,
         ]);
         
         return redirect()->route('admin.invoices.index')

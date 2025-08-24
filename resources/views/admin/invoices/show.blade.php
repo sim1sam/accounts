@@ -96,6 +96,17 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Invoice Date</label>
+                                <p class="form-control-plaintext">
+                                    {{ optional($invoice->invoice_date)->format('M d, Y') ?? 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
                     <a href="{{ route('admin.invoices.index') }}" class="btn btn-default">Back</a>
