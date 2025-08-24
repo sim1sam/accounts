@@ -13,10 +13,46 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $payments = Payment::with(['customer', 'bank.currency'])->latest()->paginate(10);
-        return view('admin.payments.index', compact('payments'));
+        $query = Payment::query()->with(['customer', 'bank.currency'])->latest();
+
+        // Free text search on customer name or mobile
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->whereHas('customer', function ($c) use ($q) {
+                $c->where('name', 'like', "%{$q}%")
+                  ->orWhere('mobile', 'like', "%{$q}%");
+            });
+        }
+
+        // Bank filter
+        if ($request->filled('bank_id')) {
+            $query->where('bank_id', $request->integer('bank_id'));
+        }
+
+        // Payment date range
+        if ($request->filled('payment_date_from')) {
+            $query->whereDate('payment_date', '>=', $request->date('payment_date_from'));
+        }
+        if ($request->filled('payment_date_to')) {
+            $query->whereDate('payment_date', '<=', $request->date('payment_date_to'));
+        }
+
+        // Amount range
+        if ($request->filled('min_amount')) {
+            $query->where('amount', '>=', (float) $request->get('min_amount'));
+        }
+        if ($request->filled('max_amount')) {
+            $query->where('amount', '<=', (float) $request->get('max_amount'));
+        }
+
+        $payments = $query->paginate(10)->withQueryString();
+
+        // Banks for filter dropdown
+        $banks = Bank::with('currency')->where('is_active', 1)->orderBy('name')->get();
+
+        return view('admin.payments.index', compact('payments', 'banks'));
     }
 
     public function create()
