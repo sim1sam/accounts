@@ -79,9 +79,19 @@
                                         </div>
                                     </div>
                                 </div>
-                                
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="invoice_date_0">Invoice Date</label>
+                                            <input type="date" class="form-control @error('invoices.0.invoice_date') is-invalid @enderror" id="invoice_date_0" name="invoices[0][invoice_date]" value="{{ old('invoices.0.invoice_date', date('Y-m-d')) }}">
+                                            @error('invoices.0.invoice_date')
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong>{{ $message }}</strong>
+                                                </span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="staff_select_0">Select Staff</label>
                                             <div class="dropdown">
@@ -336,6 +346,7 @@
                 console.log('Creating new entry with counter:', entryCounter);
                 
                 // Create a new entry
+                const today = new Date().toISOString().slice(0,10);
                 const newEntryHtml = `
                     <div class="invoice-entry" data-entry-id="${entryCounter}" id="invoice-entry-${entryCounter}">
                         <div class="d-flex justify-content-between mb-2">
@@ -383,9 +394,14 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="invoice_date_${entryCounter}">Invoice Date</label>
+                                    <input type="date" class="form-control" id="invoice_date_${entryCounter}" name="invoices[${entryCounter}][invoice_date]" value="${today}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="staff_select_${entryCounter}">Select Staff</label>
                                     <div class="dropdown">

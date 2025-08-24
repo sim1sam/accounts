@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class InvoiceController extends Controller
 {
@@ -49,6 +50,7 @@ class InvoiceController extends Controller
                     'customer_id' => 'required|exists:customers,id',
                     'staff_id' => 'required|exists:staff,id',
                     'invoice_value' => 'required|numeric|min:0',
+                    'invoice_date' => 'nullable|date',
                 ]);
                 
                 if ($validator->fails()) {
@@ -56,12 +58,14 @@ class InvoiceController extends Controller
                 }
                 
                 // Create the invoice
-                Invoice::create([
+                $invoice = Invoice::create([
                     'invoice_id' => $invoiceData['invoice_id'],
                     'customer_id' => $invoiceData['customer_id'],
                     'staff_id' => $invoiceData['staff_id'],
                     'invoice_value' => $invoiceData['invoice_value'],
+                    'invoice_date' => $invoiceData['invoice_date'] ?? null,
                 ]);
+                // timestamps are left as current; invoice_date stores the business date
                 
                 $successCount++;
             }
@@ -79,6 +83,7 @@ class InvoiceController extends Controller
                 'customer_id' => 'required|exists:customers,id',
                 'staff_id' => 'required|exists:staff,id',
                 'invoice_value' => 'required|numeric|min:0',
+                'invoice_date' => 'nullable|date',
             ]);
             
             $invoice = Invoice::create([
@@ -86,7 +91,9 @@ class InvoiceController extends Controller
                 'customer_id' => $request->customer_id,
                 'staff_id' => $request->staff_id,
                 'invoice_value' => $request->invoice_value,
+                'invoice_date' => $request->invoice_date,
             ]);
+            // timestamps are left as current; invoice_date stores the business date
             
             return redirect()->route('admin.invoices.index')
                 ->with('success', 'Invoice created successfully!');

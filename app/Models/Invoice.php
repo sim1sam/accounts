@@ -16,6 +16,11 @@ class Invoice extends Model
         'customer_id',
         'staff_id',
         'invoice_value',
+        'invoice_date',
+    ];
+
+    protected $casts = [
+        'invoice_date' => 'date',
     ];
 
     /**
