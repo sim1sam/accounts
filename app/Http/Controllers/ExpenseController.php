@@ -42,6 +42,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'account_id' => 'required|exists:accounts,id',
             'remarks' => 'nullable|string|max:1000',
+            'expense_date' => 'nullable|date',
         ]);
 
         try {
@@ -68,7 +69,8 @@ class ExpenseController extends Controller
                 'currency_id' => $account->currency_id,
                 'remarks' => $request->remarks,
                 'amount_in_bdt' => $amountInBDT,
-                'status' => 'pending'
+                'status' => 'pending',
+                'expense_date' => $request->expense_date,
             ];
             if ($purpose !== null) { $expenseData['purpose'] = $purpose; }
             $expense = Expense::create($expenseData);

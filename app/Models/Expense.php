@@ -15,6 +15,7 @@ class Expense extends Model
         'amount_in_bdt',
         'status',
         'paid_at',
+        'expense_date',
         'transaction_id'
     ];
     
@@ -27,6 +28,7 @@ class Expense extends Model
         'amount' => 'decimal:2',
         'amount_in_bdt' => 'decimal:2',
         'paid_at' => 'datetime',
+        'expense_date' => 'date',
     ];
 
 
