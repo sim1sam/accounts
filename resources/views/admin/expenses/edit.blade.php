@@ -93,6 +93,16 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="expense_date">Date</label>
+                            <input type="date" class="form-control @error('expense_date') is-invalid @enderror" id="expense_date" name="expense_date" value="{{ old('expense_date', $expense->expense_date ? $expense->expense_date->format('Y-m-d') : now()->toDateString()) }}">
+                            @error('expense_date')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
                             <label for="remarks">Remarks</label>
                             <textarea class="form-control @error('remarks') is-invalid @enderror" id="remarks" name="remarks" rows="3">{{ old('remarks', $expense->remarks) }}</textarea>
                             @error('remarks')

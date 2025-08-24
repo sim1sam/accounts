@@ -143,6 +143,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'account_id' => 'required|exists:accounts,id',
             'remarks' => 'nullable|string|max:1000',
+            'expense_date' => 'nullable|date',
         ]);
 
         try {
@@ -179,6 +180,7 @@ class ExpenseController extends Controller
                 'currency_id' => $newAccount->currency_id,
                 'remarks' => $request->remarks,
                 'amount_in_bdt' => $newAmountInBDT,
+                'expense_date' => $request->expense_date,
             ];
             if ($purpose !== null) { $updateData['purpose'] = $purpose; }
             $expense->update($updateData);

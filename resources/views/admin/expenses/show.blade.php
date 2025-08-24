@@ -74,6 +74,11 @@
                             @endif
                         </dd>
 
+                        @if($expense->expense_date)
+                        <dt class="col-sm-3">Expense Date:</dt>
+                        <dd class="col-sm-9">{{ $expense->expense_date->format('M d, Y') }}</dd>
+                        @endif
+
                         <dt class="col-sm-3">Created:</dt>
                         <dd class="col-sm-9">{{ $expense->created_at->format('M d, Y H:i') }}</dd>
 
