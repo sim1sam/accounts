@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Delivery;
 use App\Models\Customer;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 
 class DeliveryController extends Controller
@@ -11,10 +12,51 @@ class DeliveryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $deliveries = Delivery::with('customer')->latest()->paginate(10);
-        return view('admin.deliveries.index', compact('deliveries'));
+        $query = Delivery::query()->with(['customer.keyAccountManager'])->latest();
+
+        // Free text search: shipment_no or customer name/mobile
+        $q = trim((string) $request->get('q'));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('shipment_no', 'like', "%{$q}%")
+                  ->orWhereHas('customer', function ($c) use ($q) {
+                      $c->where('name', 'like', "%{$q}%")
+                        ->orWhere('mobile', 'like', "%{$q}%");
+                  });
+            });
+        }
+
+        // Staff filter via customer's KAM
+        if ($request->filled('staff_id')) {
+            $query->whereHas('customer', function ($c) use ($request) {
+                $c->where('kam', $request->integer('staff_id'));
+            });
+        }
+
+        // Delivery date range
+        if ($request->filled('delivery_date_from')) {
+            $query->whereDate('delivery_date', '>=', $request->date('delivery_date_from'));
+        }
+        if ($request->filled('delivery_date_to')) {
+            $query->whereDate('delivery_date', '<=', $request->date('delivery_date_to'));
+        }
+
+        // Delivery value range
+        if ($request->filled('min_value')) {
+            $query->where('delivery_value', '>=', (float) $request->get('min_value'));
+        }
+        if ($request->filled('max_value')) {
+            $query->where('delivery_value', '<=', (float) $request->get('max_value'));
+        }
+
+        $deliveries = $query->paginate(10)->withQueryString();
+
+        // Staff list for filter dropdown
+        $staff = Staff::orderBy('name')->get();
+
+        return view('admin.deliveries.index', compact('deliveries', 'staff'));
     }
 
     /**
