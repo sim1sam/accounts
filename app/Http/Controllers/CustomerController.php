@@ -12,9 +12,22 @@ class CustomerController extends Controller
     /**
      * Display a listing of the customers.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::latest()->paginate(10);
+        $query = Customer::query();
+
+        // Single search input: q (matches name or mobile)
+        $q = trim((string) $request->get('q'));
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('mobile', 'like', "%{$q}%");
+            });
+        }
+
+        $customers = $query->latest()->paginate(10)->withQueryString();
+
         return view('admin.customers.index', compact('customers'));
     }
 

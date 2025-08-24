@@ -19,6 +19,19 @@
 @section('content')
     <div class="card">
         <div class="card-body">
+            <form method="GET" action="{{ route('admin.customers.index') }}" class="mb-3">
+                <div class="form-row">
+                    <div class="col-md-8 mb-2">
+                        <label for="q" class="sr-only">Search</label>
+                        <input type="text" name="q" id="q" value="{{ request('q') }}" class="form-control" placeholder="Search by name or mobile">
+                    </div>
+                    <div class="col-md-4 mb-2 d-flex">
+                        <button type="submit" class="btn btn-primary mr-2"><i class="fas fa-search"></i> Search</button>
+                        <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                    </div>
+                </div>
+            </form>
+
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
