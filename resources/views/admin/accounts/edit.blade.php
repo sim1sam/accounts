@@ -50,6 +50,25 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="category">Account Category</label>
+                            <select class="form-control @error('category') is-invalid @enderror" id="category" name="category">
+                                <option value="">-- Select Category --</option>
+                                <option value="Purchase" {{ old('category', $account->category) == 'Purchase' ? 'selected' : '' }}>Purchase</option>
+                                <option value="Overhead" {{ old('category', $account->category) == 'Overhead' ? 'selected' : '' }}>Overhead</option>
+                                <option value="Tangible Asset" {{ old('category', $account->category) == 'Tangible Asset' ? 'selected' : '' }}>Tangible Asset</option>
+                                <option value="Intangible Asset" {{ old('category', $account->category) == 'Intangible Asset' ? 'selected' : '' }}>Intangible Asset</option>
+                                <option value="Personal Expense" {{ old('category', $account->category) == 'Personal Expense' ? 'selected' : '' }}>Personal Expense</option>
+                                <option value="Tax" {{ old('category', $account->category) == 'Tax' ? 'selected' : '' }}>Tax</option>
+                            </select>
+                            @error('category')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                            <small class="text-muted">Optional: Categorize this account for better organization</small>
+                        </div>
+
+                        <div class="form-group">
                             <label>Initial Amount</label>
                             <input type="text" class="form-control" value="{{ $account->currency->symbol }} {{ number_format($account->initial_amount, 2) }}" disabled>
                             <small class="text-muted">Initial amount cannot be changed after creation</small>

@@ -8,6 +8,7 @@ class Account extends Model
 {
     protected $fillable = [
         'name',
+        'category',
         'initial_amount',
         'current_amount',
         'currency_id',

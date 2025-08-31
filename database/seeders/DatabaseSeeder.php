@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
         
         // Seed currencies
         $this->call(CurrencySeeder::class);
+        
+        // Seed account categories
+        $this->call(AccountCategorySeeder::class);
 
         // User::factory(10)->create();
 

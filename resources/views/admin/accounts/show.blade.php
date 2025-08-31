@@ -52,7 +52,7 @@
                     @endif
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="info-box">
                                 <span class="info-box-icon bg-info"><i class="fas fa-wallet"></i></span>
                                 <div class="info-box-content">
@@ -61,7 +61,16 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-tag"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Category</span>
+                                    <span class="info-box-number">{{ $account->category ?? 'Not categorized' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="info-box">
                                 <span class="info-box-icon bg-success"><i class="fas fa-money-bill-alt"></i></span>
                                 <div class="info-box-content">

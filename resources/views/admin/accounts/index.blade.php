@@ -43,6 +43,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Name</th>
+                                    <th>Category</th>
                                     <th>Initial Amount</th>
                                     <th>Current Amount</th>
                                     <th>Currency</th>
@@ -56,6 +57,7 @@
                                     <tr>
                                         <td>{{ $account->id }}</td>
                                         <td>{{ $account->name }}</td>
+                                        <td>{{ $account->category ?? '-' }}</td>
                                         <td>{{ $account->currency->symbol }} {{ number_format($account->initial_amount, 2) }}</td>
                                         <td>{{ $account->currency->symbol }} {{ number_format($account->current_amount, 2) }}</td>
                                         <td>{{ $account->currency->code }}</td>

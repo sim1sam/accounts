@@ -49,6 +49,25 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="category">Account Category</label>
+                            <select class="form-control @error('category') is-invalid @enderror" id="category" name="category">
+                                <option value="">-- Select Category --</option>
+                                <option value="Purchase" {{ old('category') == 'Purchase' ? 'selected' : '' }}>Purchase</option>
+                                <option value="Overhead" {{ old('category') == 'Overhead' ? 'selected' : '' }}>Overhead</option>
+                                <option value="Tangible Asset" {{ old('category') == 'Tangible Asset' ? 'selected' : '' }}>Tangible Asset</option>
+                                <option value="Intangible Asset" {{ old('category') == 'Intangible Asset' ? 'selected' : '' }}>Intangible Asset</option>
+                                <option value="Personal Expense" {{ old('category') == 'Personal Expense' ? 'selected' : '' }}>Personal Expense</option>
+                                <option value="Tax" {{ old('category') == 'Tax' ? 'selected' : '' }}>Tax</option>
+                            </select>
+                            @error('category')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                            <small class="text-muted">Optional: Categorize this account for better organization</small>
+                        </div>
+
+                        <div class="form-group">
                             <label for="initial_amount">Initial Amount <span class="text-danger">*</span></label>
                             <input type="number" step="0.01" min="0" class="form-control @error('initial_amount') is-invalid @enderror" id="initial_amount" name="initial_amount" value="{{ old('initial_amount', 0) }}" required>
                             @error('initial_amount')

@@ -41,6 +41,7 @@ class AccountController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'category' => 'nullable|string|max:255',
             'initial_amount' => 'required|numeric|min:0',
             'currency_id' => 'required|exists:currencies,id',
             'is_active' => 'nullable|boolean',
@@ -54,6 +55,7 @@ class AccountController extends Controller
 
         $account = new Account();
         $account->name = $request->name;
+        $account->category = $request->category;
         $account->initial_amount = $request->initial_amount;
         $account->current_amount = $request->initial_amount;
         $account->currency_id = $request->currency_id;
@@ -98,6 +100,7 @@ class AccountController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'category' => 'nullable|string|max:255',
             'currency_id' => 'required|exists:currencies,id',
             'is_active' => 'nullable|boolean',
         ]);
@@ -119,6 +122,7 @@ class AccountController extends Controller
         }
 
         $account->name = $request->name;
+        $account->category = $request->category;
         $account->currency_id = $request->currency_id;
         $account->is_active = $request->has('is_active');
         $account->save();
