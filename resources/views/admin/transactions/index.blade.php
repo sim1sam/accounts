@@ -60,15 +60,38 @@
                                     </td>
                                     <td>
                                         @php
-                                            $code = optional(optional($transaction->bank)->currency)->code ?? 'BDT';
-                                            $rate = (float) (optional(optional($transaction->bank)->currency)->conversion_rate ?? 1);
-                                            if ($rate <= 0) { $rate = 1; }
-                                            // amount stored in BDT; convert to native when non-BDT
-                                            $native = strtoupper($code) === 'BDT' ? (float) $transaction->amount : ((float) $transaction->amount / $rate);
+                                            // Get data from meta if available
+                                            $meta = json_decode($transaction->meta ?? '{}', true);
+                                            $nativeCurrency = $meta['native_currency'] ?? null;
+                                            $nativeAmount = $meta['native_amount'] ?? null;
+                                            $bdtAmount = $meta['bdt_amount'] ?? null;
+                                            $conversionRate = $meta['conversion_rate'] ?? null;
+                                            
+                                            // Fallback to calculated values if meta not available
+                                            if (!$nativeCurrency) {
+                                                $nativeCurrency = strtoupper(optional(optional($transaction->bank)->currency)->code ?? 'BDT');
+                                            }
+                                            
+                                            if ($nativeCurrency === 'BDT') {
+                                                $nativeAmount = (float) $transaction->amount;
+                                                $bdtAmount = $nativeAmount;
+                                            } else if (!$nativeAmount || !$bdtAmount) {
+                                                if ($nativeCurrency === 'INR') {
+                                                    // Special case for INR
+                                                    $conversionRate = 1.45;
+                                                    $nativeAmount = (float) $transaction->amount;
+                                                    $bdtAmount = $nativeAmount * $conversionRate;
+                                                } else {
+                                                    $conversionRate = (float) (optional(optional($transaction->bank)->currency)->conversion_rate ?? 1);
+                                                    if ($conversionRate <= 0) { $conversionRate = 1; }
+                                                    $nativeAmount = (float) $transaction->amount;
+                                                    $bdtAmount = $nativeAmount * $conversionRate;
+                                                }
+                                            }
                                         @endphp
-                                        {{ $code }} {{ number_format($native, 2) }}
-                                        @if (strtoupper($code) !== 'BDT')
-                                            <small class="text-muted">(≈ BDT {{ number_format($transaction->amount, 2) }})</small>
+                                        {{ $nativeCurrency }} {{ number_format($nativeAmount, 2) }}
+                                        @if ($nativeCurrency !== 'BDT')
+                                            <small class="text-muted">(= BDT {{ number_format($bdtAmount, 2) }})</small>
                                         @endif
                                     </td>
                                     <td>

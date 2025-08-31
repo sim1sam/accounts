@@ -304,7 +304,6 @@ class ExpenseController extends Controller
      */
     public function processPayment(Request $request, Expense $expense)
     {
-        Log::info('processPayment: start', ['expense_id' => $expense->id]);
         if ($expense->isPaid()) {
             Log::warning('processPayment: already paid', ['expense_id' => $expense->id]);
             return redirect()->route('admin.expenses.show', $expense)
@@ -314,49 +313,83 @@ class ExpenseController extends Controller
         $request->validate([
             'bank_id' => 'required|exists:banks,id',
             'payment_amount' => 'required|numeric|min:0.01',
+            'payment_amount_bdt' => 'nullable|numeric',
         ]);
 
         try {
             DB::beginTransaction();
-
+            
+            // Get bank and payment amount
             $bank = Bank::with('currency')->findOrFail($request->bank_id);
-            $paymentNative = (float) $request->payment_amount; // entered in bank's native currency
-            $rate = $bank->currency ? (float) ($bank->currency->conversion_rate ?? 1) : 1.0;
-            if ($rate <= 0) { $rate = 1.0; }
-            $convertedBDT = $bank->currency && strtoupper($bank->currency->code ?? 'BDT') !== 'BDT'
-                ? $paymentNative * $rate
-                : $paymentNative;
+            $paymentNative = (float) $request->payment_amount;
+            $currencyCode = strtoupper($bank->currency->code ?? 'BDT');
+            
+            // Calculate BDT amount based on currency
+            if ($request->has('payment_amount_bdt') && $request->payment_amount_bdt > 0) {
+                // Use provided BDT amount if available
+                $convertedBDT = (float) $request->payment_amount_bdt;
+                $rate = $currencyCode === 'BDT' ? 1.0 : ($convertedBDT / $paymentNative);
+            } else {
+                // Calculate based on currency
+                if ($currencyCode === 'BDT') {
+                    $convertedBDT = $paymentNative;
+                    $rate = 1.0;
+                } else if ($currencyCode === 'INR') {
+                    // Special case for INR: 1 INR = 1.45 BDT
+                    $convertedBDT = $paymentNative * 1.45;
+                    $rate = 1.45;
+                } else {
+                    // For other currencies, use the bank's conversion rate
+                    $rate = (float) ($bank->currency->conversion_rate ?? 1);
+                    if ($rate <= 0) { $rate = 1.0; }
+                    $convertedBDT = $paymentNative * $rate;
+                }
+            }
+            
+            // Log the conversion details
             Log::info('processPayment: computed amounts', [
                 'bank_id' => $bank->id,
-                'bank_code' => optional($bank->currency)->code,
+                'bank_code' => $currencyCode,
                 'rate' => $rate,
                 'payment_native' => $paymentNative,
                 'converted_bdt' => $convertedBDT,
                 'expense_bdt' => (float) $expense->amount_in_bdt,
             ]);
 
-            // Determine remaining amount in BDT for this expense (sum of prior payments)
+            // Determine remaining amount in BDT for this expense
             $expectedBDT = (float) $expense->amount_in_bdt;
+            
+            // Get all transactions except the initial pending one (which is created when expense is created)
+            $initialTransaction = $expense->accountTransactions()
+                ->where('type', 'expense')
+                ->orderBy('created_at')
+                ->first();
+                
+            $initialTransactionId = $initialTransaction ? $initialTransaction->id : 0;
+            
             $paidBDT = (float) $expense->accountTransactions()
                 ->where('type', 'expense')
+                ->where('id', '!=', $initialTransactionId)
                 ->sum('amount');
+                
             $remainingBDT = max($expectedBDT - $paidBDT, 0.0);
 
             // Compute the expected native amount for remaining due in this bank currency
-            $expectedNative = strtoupper(optional($bank->currency)->code ?? 'BDT') === 'BDT'
+            $expectedNative = $currencyCode === 'BDT'
                 ? $remainingBDT
                 : ($rate > 0 ? ($remainingBDT / $rate) : $remainingBDT);
 
             // Compare after rounding to 2 decimals to avoid float mismatch; allow partial up to remaining
+            // Add a small tolerance for rounding errors (0.05 instead of 0.02)
             $convertedRounded = round($convertedBDT, 2);
             $remainingRounded = round($remainingBDT, 2);
-            if ($convertedRounded > $remainingRounded + 0.02) {
+            if ($convertedRounded > $remainingRounded + 0.05) {
                 Log::warning('processPayment: attempted overpay', [
                     'convertedRounded' => $convertedRounded,
                     'remainingRounded' => $remainingRounded,
                 ]);
                 return redirect()->back()
-                    ->withErrors(['payment_amount' => 'You cannot pay more than the remaining due. Max allowed about ' . number_format($expectedNative, 2) . ' ' . (optional($bank->currency)->code ?? 'BDT') . ' (≈ BDT ' . number_format($remainingRounded, 2) . ').'])
+                    ->withErrors(['payment_amount' => 'You cannot pay more than the remaining due. Max allowed about ' . number_format($expectedNative, 2) . ' ' . $currencyCode . ' (≈ BDT ' . number_format($remainingRounded, 2) . ').'])
                     ->withInput();
             }
 
@@ -371,15 +404,28 @@ class ExpenseController extends Controller
                     ->withInput();
             }
 
-            // Create transaction record in main transaction history (store native amount in Transaction.amount)
+            // Add currency conversion info to the description
+            $currencyDescription = '';
+            if ($currencyCode !== 'BDT') {
+                $currencyDescription = ' (' . $currencyCode . ' ' . number_format($paymentNative, 2) . 
+                    ' = BDT ' . number_format($convertedRounded, 2) . ')';
+            }
+            
+            // Create transaction record in main transaction history
             $transaction = Transaction::create([
                 'type' => 'debit', // per schema enum ['credit','debit']
                 'amount' => $paymentNative,
-                'description' => 'Payment for expense on account: ' . $expense->account->name,
+                'description' => 'Payment for expense on account: ' . $expense->account->name . $currencyDescription,
                 'bank_id' => $bank->id,
                 'transaction_date' => now()->toDateString(),
                 'reference_type' => 'App\\Models\\Expense',
-                'reference_id' => $expense->id
+                'reference_id' => $expense->id,
+                'meta' => json_encode([
+                    'native_currency' => $currencyCode,
+                    'native_amount' => $paymentNative,
+                    'bdt_amount' => $convertedRounded,
+                    'conversion_rate' => $rate
+                ])
             ]);
             Log::info('processPayment: transaction created', ['transaction_id' => $transaction->id ?? null]);
 
@@ -413,6 +459,18 @@ class ExpenseController extends Controller
             // Update expense status depending on remaining due after this payment
             $newPaidBDT = $paidBDT + $convertedRounded;
             $newRemainingBDT = max($expectedBDT - $newPaidBDT, 0.0);
+            
+            // Log payment details for debugging
+            Log::info('processPayment: payment details', [
+                'expense_id' => $expense->id,
+                'expected_bdt' => $expectedBDT,
+                'paid_bdt_before' => $paidBDT,
+                'current_payment_bdt' => $convertedRounded,
+                'new_paid_total' => $newPaidBDT,
+                'new_remaining' => $newRemainingBDT
+            ]);
+            
+            // Only mark as paid if the remaining amount is very close to zero
             if ($newRemainingBDT <= 0.02) {
                 $expense->update([
                     'status' => 'paid',

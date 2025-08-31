@@ -27,7 +27,14 @@
         const bdtHelper = document.getElementById('helper-bdt');
         const nativeHelper = document.getElementById('helper-native');
         // Remaining due in BDT (expense total - prior payments)
-        const expenseBDTRemaining = {{ json_encode((float) ($expense->amount_in_bdt - $expense->accountTransactions()->where('type','expense')->sum('amount'))) }};
+        // Exclude initial transaction when calculating paid amount
+        @php
+            $initialTransaction = $expense->accountTransactions()->where('type', 'expense')->orderBy('created_at')->first();
+            $initialTransactionId = $initialTransaction ? $initialTransaction->id : 0;
+            $paidBDT = (float) $expense->accountTransactions()->where('type', 'expense')->where('id', '!=', $initialTransactionId)->sum('amount');
+            $remainingBDT = max(((float)$expense->amount_in_bdt) - $paidBDT, 0);
+        @endphp
+        const expenseBDTRemaining = {{ json_encode($remainingBDT) }};
 
         function recalc(){
             const opt = bankSelect.options[bankSelect.selectedIndex];
@@ -35,18 +42,95 @@
             const rate = opt && opt.dataset.rate ? parseFloat(opt.dataset.rate) : 1;
             codeBadge.textContent = code;
             // Auto-fill expected native amount for the selected bank based on remaining due
-            const expectedNative = code === 'BDT' ? expenseBDTRemaining : (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining);
+            // For INR specifically, use the correct conversion (1 BDT = 0.69 INR, so 1 INR = 1/0.69 BDT)
+            let expectedNative;
+            if (code === 'INR') {
+                // For INR, 1 BDT = 0.69 INR (or 1 INR = 1.45 BDT)
+                // Therefore, to convert BDT to INR: BDT * 0.69
+                expectedNative = expenseBDTRemaining * 0.69;
+            } else {
+                expectedNative = code === 'BDT' ? expenseBDTRemaining : (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining);
+            }
             if (!input.value || parseFloat(input.value) <= 0) {
                 input.value = expectedNative.toFixed(2);
             }
             // Show helper: native -> BDT
             const entered = parseFloat(input.value || 0);
-            const enteredBDT = code === 'BDT' ? entered : (entered * (rate > 0 ? rate : 1));
-            bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2);
-            nativeHelper.textContent = 'You will pay: ' + code + ' ' + (entered.toFixed(2)) + ' ≈ BDT ' + enteredBDT.toFixed(2);
+            let enteredBDT;
+            
+            // Special handling for INR conversion
+            if (code === 'INR') {
+                // For INR, 1 INR = 1.45 BDT (as per requirement: INR 13.80 = BDT 20)
+                enteredBDT = entered * 1.45;
+            } else {
+                enteredBDT = code === 'BDT' ? entered : (entered * (rate > 0 ? rate : 1));
+            }
+            
+            // Show remaining due in both currencies
+            let remainingNative;
+            if (code === 'INR') {
+                remainingNative = expenseBDTRemaining * 0.69;
+                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2) + ' = INR ' + remainingNative.toFixed(2);
+            } else if (code !== 'BDT') {
+                remainingNative = rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining;
+                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2) + ' = ' + code + ' ' + remainingNative.toFixed(2);
+            } else {
+                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2);
+            }
+            
+            // Show payment amount in both currencies
+            nativeHelper.textContent = 'You will pay: ' + code + ' ' + (entered.toFixed(2)) + ' = BDT ' + enteredBDT.toFixed(2);
+            
+            // Update hidden BDT amount field
+            document.getElementById('payment_amount_bdt').value = enteredBDT.toFixed(2);
         }
 
-        bankSelect.addEventListener('change', () => { input.value = ''; recalc(); });
+        bankSelect.addEventListener('change', () => { 
+            // When bank changes, automatically calculate and set the converted amount
+            const opt = bankSelect.options[bankSelect.selectedIndex];
+            const code = opt && opt.dataset.code ? opt.dataset.code : 'BDT';
+            const rate = opt && opt.dataset.rate ? parseFloat(opt.dataset.rate) : 1;
+            
+            // Get current BDT value (either from hidden field or calculate from current input)
+            let currentBDTValue;
+            const hiddenBDTField = document.getElementById('payment_amount_bdt');
+            
+            if (hiddenBDTField.value && parseFloat(hiddenBDTField.value) > 0) {
+                // Use the stored BDT value if available
+                currentBDTValue = parseFloat(hiddenBDTField.value);
+            } else if (input.value && parseFloat(input.value) > 0) {
+                // Calculate BDT from current input value
+                const prevCode = codeBadge.textContent;
+                if (prevCode === 'INR') {
+                    currentBDTValue = parseFloat(input.value) * (1/0.69);
+                } else if (prevCode !== 'BDT') {
+                    const prevRate = bankSelect.options[bankSelect.selectedIndex].dataset.rate || 1;
+                    currentBDTValue = parseFloat(input.value) * parseFloat(prevRate);
+                } else {
+                    currentBDTValue = parseFloat(input.value);
+                }
+            } else {
+                // Default to remaining BDT if no value is set
+                currentBDTValue = expenseBDTRemaining;
+            }
+            
+            // Auto-fill with converted amount based on the selected currency
+            if (code === 'INR') {
+                // Convert BDT to INR (BDT * 0.69) - for INR 13.80 = BDT 20
+                input.value = (expenseBDTRemaining * 0.69).toFixed(2);
+            } else if (code !== 'BDT') {
+                // For other currencies, use the rate from the bank
+                input.value = (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining).toFixed(2);
+            } else {
+                // For BDT, use the BDT amount directly
+                input.value = expenseBDTRemaining.toFixed(2);
+            }
+            
+            // Update hidden BDT field
+            hiddenBDTField.value = currentBDTValue.toFixed(2);
+            
+            recalc();
+        });
         input.addEventListener('input', recalc);
         // init
         recalc();
@@ -103,6 +187,7 @@
                                     <span class="input-group-text" id="bank-code">BDT</span>
                                 </div>
                                 <input type="number" step="0.01" min="0.01" class="form-control @error('payment_amount') is-invalid @enderror" id="payment_amount" name="payment_amount" value="{{ old('payment_amount') }}" required>
+                                <input type="hidden" id="payment_amount_bdt" name="payment_amount_bdt" value="">
                             </div>
                             @error('payment_amount')
                                 <span class="invalid-feedback" role="alert">
@@ -110,7 +195,9 @@
                                 </span>
                             @enderror
                             @php
-                                $paidBDT = (float) $expense->accountTransactions()->where('type','expense')->sum('amount');
+                                $initialTransaction = $expense->accountTransactions()->where('type', 'expense')->orderBy('created_at')->first();
+                                $initialTransactionId = $initialTransaction ? $initialTransaction->id : 0;
+                                $paidBDT = (float) $expense->accountTransactions()->where('type', 'expense')->where('id', '!=', $initialTransactionId)->sum('amount');
                                 $remainingBDT = max(((float)$expense->amount_in_bdt) - $paidBDT, 0);
                             @endphp
                             <small class="form-text text-muted" id="helper-bdt">Remaining due: BDT {{ number_format($remainingBDT, 2) }}</small>
