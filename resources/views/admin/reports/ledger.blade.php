@@ -82,9 +82,15 @@
 </div>
 
 @if(request('filter'))
+    <!-- Print Button -->
+    @if(request()->has('filter'))
+        <a href="{{ route('admin.reports.ledger.print', request()->all()) }}" target="_blank" class="btn btn-info ml-2">
+            <i class="fas fa-print"></i> Print Report
+        </a>
+    @endif
     <!-- Customer Summary Table -->
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Customer Summary</h3>
         </div>
         <div class="card-body table-responsive p-0">
@@ -216,8 +222,102 @@
     .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 38px !important;
     }
+    
+    /* Print styles */
+    @media print {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .print-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .print-header p {
+            margin: 5px 0 0;
+            font-size: 14px;
+        }
+        
+        .customer-details h3,
+        .customer-summary h3,
+        .detailed-records h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .print-customer-table,
+        .print-summary-table,
+        .print-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .print-customer-table th,
+        .print-customer-table td {
+            padding: 5px;
+            text-align: left;
+            border: none;
+        }
+        
+        .print-customer-table th {
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .print-summary-table th,
+        .print-summary-table td,
+        .print-details-table th,
+        .print-details-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        
+        .print-summary-table th,
+        .print-details-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .print-details-table td:nth-child(1),
+        .print-details-table td:nth-child(2),
+        .print-details-table td:nth-child(3) {
+            text-align: left;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        
+        .text-danger {
+            color: #dc3545;
+        }
+        
+        .text-success {
+            color: #28a745;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    }
 </style>
 @stop
+
 
 @section('js')
 <script>
@@ -237,6 +337,8 @@
             $('#start_date').val(firstDayFormatted);
             $('#end_date').val(lastDayFormatted);
         }
+        
+        // No print functionality needed here as we use a dedicated print route
     });
 </script>
 @stop
