@@ -20,6 +20,7 @@ use App\Http\Controllers\AccountTransactionController;
 use App\Http\Controllers\Admin\LedgerReportController;
 use App\Http\Controllers\Admin\BudgetController;
 use App\Http\Controllers\Admin\UserPermissionController;
+use App\Http\Controllers\Admin\RevenueController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -172,6 +173,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/reports/ledger', [LedgerReportController::class, 'index'])->name('admin.reports.ledger');
     Route::get('/admin/reports/ledger/print', [LedgerReportController::class, 'printView'])->name('admin.reports.ledger.print');
     Route::get('/admin/reports/staff-sales', [AdminController::class, 'staffSales'])->name('admin.reports.staff_sales');
+    
+    // Revenue Menu Route
+    Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.revenue.index');
 
     // User & Permissions Management
     Route::get('/admin/users/create', [UserPermissionController::class, 'create'])->name('admin.users.create');
