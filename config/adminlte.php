@@ -473,6 +473,13 @@ return [
             'active' => ['admin/revenue*'],
             'can' => 'menu.reports.ledger',
         ],
+        [
+            'text' => 'Profit & Loss',
+            'url' => 'admin/profit-loss',
+            'icon' => 'fas fa-fw fa-balance-scale',
+            'active' => ['admin/profit-loss*'],
+            'can' => 'menu.reports.ledger',
+        ],
         // Multi Level menu and Labels removed as requested
     ],
 

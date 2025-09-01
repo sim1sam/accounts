@@ -42,6 +42,23 @@ class Account extends Model
     {
         return $this->belongsTo(Currency::class);
     }
+    
+    /**
+     * Get the category associated with the account.
+     */
+    public function accountCategory()
+    {
+        return $this->belongsTo(AccountCategory::class, 'category', 'name');
+    }
+    
+    /**
+     * Get the category as attribute - not a relationship
+     * This is just a helper method to avoid the error
+     */
+    public function getCategoryAttribute()
+    {
+        return $this->attributes['category'];
+    }
 
     /**
      * Get the amount in BDT

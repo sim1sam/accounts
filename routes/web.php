@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\LedgerReportController;
 use App\Http\Controllers\Admin\BudgetController;
 use App\Http\Controllers\Admin\UserPermissionController;
 use App\Http\Controllers\Admin\RevenueController;
+use App\Http\Controllers\Admin\ProfitLossController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -176,6 +177,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Revenue Menu Route
     Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.revenue.index');
+    
+    // Profit & Loss Menu Route
+    Route::get('/admin/profit-loss', [ProfitLossController::class, 'index'])->name('admin.profit-loss.index');
 
     // User & Permissions Management
     Route::get('/admin/users/create', [UserPermissionController::class, 'create'])->name('admin.users.create');
