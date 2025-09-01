@@ -52,6 +52,14 @@ class Account extends Model
     }
     
     /**
+     * Get the transactions associated with the account.
+     */
+    public function transactions()
+    {
+        return $this->hasMany(AccountTransaction::class);
+    }
+    
+    /**
      * Get the category as attribute - not a relationship
      * This is just a helper method to avoid the error
      */

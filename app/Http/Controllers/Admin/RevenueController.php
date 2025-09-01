@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\AccountTransaction;
 use App\Models\Currency;
 use App\Models\Payment;
 use App\Models\Refund;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RevenueController extends Controller
 {
@@ -16,16 +19,20 @@ class RevenueController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         // Get BDT and INR currencies
         $bdtCurrency = Currency::where('code', 'BDT')->first();
         $inrCurrency = Currency::where('code', 'INR')->first();
         $inrRate = $inrCurrency->conversion_rate;
         
-        // Calculate All Payment = Sum all payment - refund in BDT
-        $totalPayments = Payment::sum('amount');
-        $totalRefunds = Refund::sum('refund_amount');
+        // Get date range for filtering
+        $startDate = $request->input('start_date', Carbon::now()->subDays(30)->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+        
+        // Calculate All Payment = Sum all payment - refund in BDT for the date range
+        $totalPayments = Payment::whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])->sum('amount');
+        $totalRefunds = Refund::whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])->sum('refund_amount');
         $netPayments = $totalPayments - $totalRefunds;
         
         // Convert to INR
@@ -33,33 +40,100 @@ class RevenueController extends Controller
         $totalRefundsInr = $totalRefunds / $inrRate;
         $netPaymentsInr = $netPayments / $inrRate;
         
-        // Get accounts by category
-        $purchaseAccounts = Account::where('category', 'Purchase')->get();
-        $overheadAccounts = Account::where('category', 'Overhead')->get();
-        $tangibleAssetAccounts = Account::where('category', 'Tangible Asset')->get();
-        $intangibleAssetAccounts = Account::where('category', 'Intangible Asset')->get();
+        // Get accounts by category with transactions filtered by date range
+        $purchaseAccounts = Account::where('category', 'Purchase')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
+            
+        $overheadAccounts = Account::where('category', 'Overhead')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
+            
+        $tangibleAssetAccounts = Account::where('category', 'Tangible Asset')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
+            
+        $intangibleAssetAccounts = Account::where('category', 'Intangible Asset')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
+            
+        $personalExpenseAccounts = Account::where('category', 'Personal Expense')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
+            
+        $taxAccounts = Account::where('category', 'Tax')
+            ->with(['transactions' => function($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            }])
+            ->get();
         
         // Calculate totals by category in BDT
         $cogsTotal = 0;
         $overheadTotal = 0;
         $tangibleAssetTotal = 0;
         $intangibleAssetTotal = 0;
+        $personalExpenseTotal = 0;
+        $taxTotal = 0;
         
-        // Calculate totals with currency conversion to BDT
+        // Calculate totals with currency conversion to BDT for the date range
         foreach ($purchaseAccounts as $account) {
-            $cogsTotal += $account->getAmountInBDT();
+            // Sum only the filtered transactions
+            $accountTotal = $account->transactions->sum('amount');
+            // Convert to BDT if needed
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $cogsTotal += $accountTotal;
         }
         
         foreach ($overheadAccounts as $account) {
-            $overheadTotal += $account->getAmountInBDT();
+            $accountTotal = $account->transactions->sum('amount');
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $overheadTotal += $accountTotal;
         }
         
         foreach ($tangibleAssetAccounts as $account) {
-            $tangibleAssetTotal += $account->getAmountInBDT();
+            $accountTotal = $account->transactions->sum('amount');
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $tangibleAssetTotal += $accountTotal;
         }
         
         foreach ($intangibleAssetAccounts as $account) {
-            $intangibleAssetTotal += $account->getAmountInBDT();
+            $accountTotal = $account->transactions->sum('amount');
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $intangibleAssetTotal += $accountTotal;
+        }
+        
+        foreach ($personalExpenseAccounts as $account) {
+            $accountTotal = $account->transactions->sum('amount');
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $personalExpenseTotal += $accountTotal;
+        }
+        
+        foreach ($taxAccounts as $account) {
+            $accountTotal = $account->transactions->sum('amount');
+            if ($account->currency_id != $bdtCurrency->id) {
+                $accountTotal *= $account->currency->conversion_rate;
+            }
+            $taxTotal += $accountTotal;
         }
         
         $assetTotal = $tangibleAssetTotal + $intangibleAssetTotal;
@@ -70,12 +144,41 @@ class RevenueController extends Controller
         $tangibleAssetTotalInr = $tangibleAssetTotal / $inrRate;
         $intangibleAssetTotalInr = $intangibleAssetTotal / $inrRate;
         $assetTotalInr = $assetTotal / $inrRate;
+        $personalExpenseTotalInr = $personalExpenseTotal / $inrRate;
+        $taxTotalInr = $taxTotal / $inrRate;
         
         // Get currency symbols
         $bdtSymbol = $bdtCurrency->symbol;
         $inrSymbol = $inrCurrency->symbol;
         
+        // Get transaction data grouped by reference_type and filtered by date range
+        $transactionsByType = AccountTransaction::select('reference_type', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as transaction_count'))
+            ->whereNotNull('reference_type')
+            ->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->groupBy('reference_type')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+        
+        // Get date-wise data
+        
+        $dateWiseTransactions = AccountTransaction::select(DB::raw('DATE(created_at) as transaction_date'), DB::raw('SUM(amount) as daily_total'), DB::raw('COUNT(*) as transaction_count'))
+            ->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->groupBy('transaction_date')
+            ->orderBy('transaction_date', 'desc')
+            ->get();
+            
+        // Get all transactions for the date range
+        $allTransactions = AccountTransaction::with('account')
+            ->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('admin.revenue.index', compact(
+            'startDate',
+            'endDate',
+            'transactionsByType',
+            'dateWiseTransactions',
+            'allTransactions',
             'netPayments',
             'totalPayments',
             'totalRefunds',
@@ -84,10 +187,14 @@ class RevenueController extends Controller
             'assetTotal',
             'tangibleAssetTotal',
             'intangibleAssetTotal',
+            'personalExpenseTotal',
+            'taxTotal',
             'purchaseAccounts',
             'overheadAccounts',
             'tangibleAssetAccounts',
             'intangibleAssetAccounts',
+            'personalExpenseAccounts',
+            'taxAccounts',
             'netPaymentsInr',
             'totalPaymentsInr',
             'totalRefundsInr',
@@ -96,6 +203,8 @@ class RevenueController extends Controller
             'assetTotalInr',
             'tangibleAssetTotalInr',
             'intangibleAssetTotalInr',
+            'personalExpenseTotalInr',
+            'taxTotalInr',
             'bdtSymbol',
             'inrSymbol',
             'inrRate'
