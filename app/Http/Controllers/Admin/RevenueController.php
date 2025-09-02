@@ -167,18 +167,107 @@ class RevenueController extends Controller
             ->orderBy('transaction_date', 'desc')
             ->get();
             
-        // Get all transactions for the date range
-        $allTransactions = AccountTransaction::with('account')
-            ->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Get transaction type from request or default to 'all'
+        $transactionType = $request->input('transaction_type', 'all');
+        
+        // Start building the query for all transactions
+        $transactionQuery = AccountTransaction::with('account')
+            ->whereBetween('created_at', [$startDate.' 00:00:00', $endDate.' 23:59:59']);
+            
+        // Get payment transactions from the transactions table if needed
+        $paymentTransactions = collect([]);
+        if ($transactionType === 'all' || $transactionType === 'payment') {
+            $paymentTransactions = DB::table('transactions')
+                ->join('banks', 'transactions.bank_id', '=', 'banks.id')
+                ->leftJoin('payments', 'transactions.payment_id', '=', 'payments.id')
+                ->leftJoin('customers', 'payments.customer_id', '=', 'customers.id')
+                ->whereNotNull('payment_id')
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->select(
+                    'transactions.id',
+                    'transactions.amount',
+                    'transactions.description',
+                    'transactions.transaction_date as created_at',
+                    'transactions.type',
+                    'banks.name as bank_name',
+                    'customers.name as customer_name'
+                )
+                ->get();
+        }
+            
+        // Apply transaction type filter if not 'all'
+        if ($transactionType !== 'all') {
+            if ($transactionType === 'payment') {
+                // We'll handle payment transactions separately
+                $transactionQuery->where('id', 0); // No results from account_transactions
+            } elseif ($transactionType === 'refund') {
+                // Include refund transactions (App\Models\Refund)
+                $transactionQuery->where('reference_type', 'App\\Models\\Refund');
+            } elseif ($transactionType === 'expense') {
+                // Include expense transactions (App\Models\Expense)
+                $transactionQuery->where('reference_type', 'App\\Models\\Expense');
+            } elseif ($transactionType === 'cogs') {
+                $transactionQuery->whereHas('account', function($query) {
+                    $query->where('category', 'Purchase');
+                });
+            } elseif ($transactionType === 'overhead') {
+                $transactionQuery->whereHas('account', function($query) {
+                    $query->where('category', 'Overhead');
+                });
+            } elseif ($transactionType === 'asset') {
+                $transactionQuery->whereHas('account', function($query) {
+                    $query->whereIn('category', ['Tangible Asset', 'Intangible Asset']);
+                });
+            } elseif ($transactionType === 'personal') {
+                $transactionQuery->whereHas('account', function($query) {
+                    $query->where('category', 'Personal Expense');
+                });
+            } elseif ($transactionType === 'tax') {
+                $transactionQuery->whereHas('account', function($query) {
+                    $query->where('category', 'Tax');
+                });
+            }
+        }
+        
+        // Get all transactions from account_transactions
+        $accountTransactions = $transactionQuery->orderBy('created_at', 'desc')->get();
+        
+        // Combine with payment transactions if needed
+        $transactions = $accountTransactions;
+        
+        // If showing all transactions or specifically payments, include payment transactions
+        if ($transactionType === 'all' || $transactionType === 'payment') {
+            // Convert payment transactions to a format compatible with the view
+            $formattedPaymentTransactions = $paymentTransactions->map(function($payment) {
+                return (object) [
+                    'id' => 'payment-' . $payment->id,
+                    'amount' => $payment->amount,
+                    'description' => $payment->description,
+                    'created_at' => $payment->created_at,
+                    'type' => $payment->type === 'credit' ? 'income' : 'expense',
+                    'account' => (object) [
+                        'name' => $payment->bank_name . ' - ' . $payment->customer_name,
+                        'category' => 'Payment'
+                    ]
+                ];
+            });
+            
+            // If showing only payments, use only payment transactions
+            if ($transactionType === 'payment') {
+                $transactions = $formattedPaymentTransactions;
+            } else {
+                // Otherwise, merge with account transactions
+                $transactions = $accountTransactions->concat($formattedPaymentTransactions);
+            }
+        }
         
         return view('admin.revenue.index', compact(
             'startDate',
             'endDate',
+            'transactionType',
+            'transactions',
             'transactionsByType',
             'dateWiseTransactions',
-            'allTransactions',
             'netPayments',
             'totalPayments',
             'totalRefunds',

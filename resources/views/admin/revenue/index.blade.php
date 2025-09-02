@@ -168,6 +168,26 @@
                         <span class="badge badge-info">Showing transactions from {{ $startDate }} to {{ $endDate }}</span>
                     </div>
                 </div>
+                <div class="card-header bg-light">
+                    <form method="GET" action="{{ route('admin.revenue.index') }}" class="form-inline">
+                        <input type="hidden" name="start_date" value="{{ $startDate }}">
+                        <input type="hidden" name="end_date" value="{{ $endDate }}">
+                        <div class="form-group mr-2">
+                            <label for="transaction_type" class="mr-2">Filter by:</label>
+                            <select name="transaction_type" id="transaction_type" class="form-control form-control-sm" onchange="this.form.submit()">
+                                <option value="all" {{ $transactionType == 'all' ? 'selected' : '' }}>All Transactions</option>
+                                <option value="payment" {{ $transactionType == 'payment' ? 'selected' : '' }}>Payments</option>
+                                <option value="refund" {{ $transactionType == 'refund' ? 'selected' : '' }}>Refunds</option>
+                                <option value="expense" {{ $transactionType == 'expense' ? 'selected' : '' }}>Expenses</option>
+                                <option value="cogs" {{ $transactionType == 'cogs' ? 'selected' : '' }}>COGS</option>
+                                <option value="overhead" {{ $transactionType == 'overhead' ? 'selected' : '' }}>Overhead</option>
+                                <option value="asset" {{ $transactionType == 'asset' ? 'selected' : '' }}>Assets</option>
+                                <option value="personal" {{ $transactionType == 'personal' ? 'selected' : '' }}>Personal Expenses</option>
+                                <option value="tax" {{ $transactionType == 'tax' ? 'selected' : '' }}>Tax</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
@@ -181,7 +201,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($allTransactions as $transaction)
+                                @forelse($transactions as $transaction)
                                     <tr>
                                         <td>{{ Carbon\Carbon::parse($transaction->created_at)->format('d M, Y H:i') }}</td>
                                         <td>{{ $transaction->account->name ?? 'Unknown Account' }}</td>
@@ -202,7 +222,9 @@
                     
                     <!-- Pagination -->
                     <div class="mt-3">
-                        {{ $allTransactions->appends(request()->except('page'))->links() }}
+                        @if($transactions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                            {{ $transactions->appends(request()->except('page'))->links() }}
+                        @endif
                     </div>
                 </div>
             </div>
