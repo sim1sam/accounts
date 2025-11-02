@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Set Bootstrap 4 as default pagination view
+        Paginator::defaultView('vendor.pagination.bootstrap-4');
+        Paginator::defaultSimpleView('vendor.pagination.simple-bootstrap-4');
+        
         // Dynamically register gates for menu permissions
         Gate::before(function ($user) {
             return ($user->role ?? 'user') === 'admin' ? true : null;

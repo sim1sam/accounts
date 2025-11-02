@@ -113,9 +113,11 @@
                     @endforelse
                 </tbody>
             </table>
-            <div class="mt-3">
-                {{ $refunds->links() }}
+            @if($refunds->hasPages())
+            <div class="card-footer clearfix">
+                {{ $refunds->appends(request()->query())->links() }}
             </div>
+            @endif
         </div>
     </div>
 @stop

@@ -87,16 +87,36 @@
                     @endforelse
                 </tbody>
             </table>
-
-            <div class="mt-3">
-                {{ $customers->links() }}
-            </div>
         </div>
+        
+        @if($customers->hasPages())
+        <div class="card-footer clearfix">
+            {{ $customers->appends(request()->query())->links('vendor.pagination.bootstrap-4') }}
+        </div>
+        @endif
     </div>
 @stop
 
 @section('css')
     <link rel="stylesheet" href="/css/admin_custom.css">
+    <style>
+        .pagination {
+            margin-bottom: 0;
+        }
+        .pagination .page-link {
+            color: #007bff;
+            border-color: #dee2e6;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+    </style>
 @stop
 
 @section('js')

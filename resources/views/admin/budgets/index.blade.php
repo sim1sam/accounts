@@ -62,7 +62,11 @@
                 </tbody>
             </table>
 
-            <div class="mt-3">{{ $budgets->links() }}</div>
+            @if($budgets->hasPages())
+            <div class="card-footer clearfix">
+                {{ $budgets->appends(request()->query())->links() }}
+            </div>
+            @endif
         </div>
     </div>
 @stop

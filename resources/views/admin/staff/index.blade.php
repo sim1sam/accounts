@@ -72,9 +72,11 @@
                 </tbody>
             </table>
 
-            <div class="mt-3">
-                {{ $staff->links() }}
+            @if($staff->hasPages())
+            <div class="card-footer clearfix">
+                {{ $staff->appends(request()->query())->links() }}
             </div>
+            @endif
         </div>
     </div>
 @stop

@@ -89,9 +89,11 @@
                 </tbody>
             </table>
 
-            <div class="mt-3">
-                {{ $banks->links() }}
+            @if($banks->hasPages())
+            <div class="card-footer clearfix">
+                {{ $banks->appends(request()->query())->links() }}
             </div>
+            @endif
         </div>
     </div>
 @stop
