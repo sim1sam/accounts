@@ -51,7 +51,14 @@ class LedgerReportController extends Controller
             
             // Apply date filters if provided
             if ($startDate && $endDate) {
-                $invoiceQuery->whereBetween('created_at', [$startDate, $endDate]);
+                // For invoices, use invoice_date if available, otherwise created_at
+                $invoiceQuery->where(function($q) use ($startDate, $endDate) {
+                    $q->whereBetween('invoice_date', [$startDate, $endDate])
+                      ->orWhere(function($q2) use ($startDate, $endDate) {
+                          $q2->whereNull('invoice_date')
+                             ->whereBetween('created_at', [$startDate, $endDate]);
+                      });
+                });
                 $paymentQuery->whereBetween('payment_date', [$startDate, $endDate]);
                 $deliveryQuery->whereBetween('delivery_date', [$startDate, $endDate]);
                 $cancellationQuery->whereBetween('cancellation_date', [$startDate, $endDate]);
@@ -100,9 +107,11 @@ class LedgerReportController extends Controller
                 }
                 
                 $customerData[$customerId]['invoice_amount'] += $invoice->invoice_value;
+                // Use invoice_date if available, otherwise fallback to created_at
+                $invoiceDate = $invoice->invoice_date ?? $invoice->created_at;
                 $customerData[$customerId]['records'][] = [
                     'type' => 'invoice',
-                    'date' => $invoice->created_at,
+                    'date' => $invoiceDate,
                     'amount' => $invoice->invoice_value,
                     'details' => 'Invoice #' . $invoice->invoice_id,
                     'record' => $invoice
@@ -290,7 +299,14 @@ class LedgerReportController extends Controller
         
         // Apply date filters if provided
         if ($startDate && $endDate) {
-            $invoiceQuery->whereBetween('created_at', [$startDate, $endDate]);
+            // For invoices, use invoice_date if available, otherwise created_at
+            $invoiceQuery->where(function($q) use ($startDate, $endDate) {
+                $q->whereBetween('invoice_date', [$startDate, $endDate])
+                  ->orWhere(function($q2) use ($startDate, $endDate) {
+                      $q2->whereNull('invoice_date')
+                         ->whereBetween('created_at', [$startDate, $endDate]);
+                  });
+            });
             $paymentQuery->whereBetween('payment_date', [$startDate, $endDate]);
             $deliveryQuery->whereBetween('delivery_date', [$startDate, $endDate]);
             $cancellationQuery->whereBetween('cancellation_date', [$startDate, $endDate]);
@@ -339,9 +355,11 @@ class LedgerReportController extends Controller
             }
             
             $customerData[$customerId]['invoice_amount'] += $invoice->invoice_value;
+            // Use invoice_date if available, otherwise fallback to created_at
+            $invoiceDate = $invoice->invoice_date ?? $invoice->created_at;
             $customerData[$customerId]['records'][] = [
                 'type' => 'invoice',
-                'date' => $invoice->created_at,
+                'date' => $invoiceDate,
                 'amount' => $invoice->invoice_value,
                 'details' => 'Invoice #' . $invoice->invoice_id,
                 'record' => $invoice
