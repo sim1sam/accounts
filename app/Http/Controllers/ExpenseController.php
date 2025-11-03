@@ -330,16 +330,12 @@ class ExpenseController extends Controller
                 $convertedBDT = (float) $request->payment_amount_bdt;
                 $rate = $currencyCode === 'BDT' ? 1.0 : ($convertedBDT / $paymentNative);
             } else {
-                // Calculate based on currency
+                // Calculate based on currency - use bank's conversion rate consistently
                 if ($currencyCode === 'BDT') {
                     $convertedBDT = $paymentNative;
                     $rate = 1.0;
-                } else if ($currencyCode === 'INR') {
-                    // Special case for INR: 1 INR = 1.45 BDT
-                    $convertedBDT = $paymentNative * 1.45;
-                    $rate = 1.45;
                 } else {
-                    // For other currencies, use the bank's conversion rate
+                    // Use the bank's conversion rate for all currencies (including INR)
                     $rate = (float) ($bank->currency->conversion_rate ?? 1);
                     if ($rate <= 0) { $rate = 1.0; }
                     $convertedBDT = $paymentNative * $rate;
