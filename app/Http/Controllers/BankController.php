@@ -38,8 +38,8 @@ class BankController extends Controller
             'account_number' => 'required|string|max:255|unique:banks',
             'branch' => 'nullable|string|max:255',
             'currency_id' => 'required|exists:currencies,id',
-            'initial_balance' => 'required|numeric|min:0',
-            'amount_in_bdt' => 'nullable|numeric|min:0',
+            'initial_balance' => 'required|numeric',
+            'amount_in_bdt' => 'nullable|numeric',
         ]);
         
         $currency = Currency::find($request->currency_id);

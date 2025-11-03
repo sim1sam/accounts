@@ -81,7 +81,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" id="currency-symbol"></span>
                                 </div>
-                                <input type="number" name="initial_balance" id="initial_balance" class="form-control @error('initial_balance') is-invalid @enderror" value="{{ old('initial_balance', 0) }}" step="0.01" min="0" required>
+                                <input type="number" name="initial_balance" id="initial_balance" class="form-control @error('initial_balance') is-invalid @enderror" value="{{ old('initial_balance', 0) }}" step="0.01" required>
                             </div>
                             <small class="form-text text-muted" id="balance_in_bdt"></small>
                             @error('initial_balance')
@@ -130,7 +130,8 @@
             
             // Calculate BDT equivalent when currency or amount changes
             function updateBDTAmount() {
-                const amount = parseFloat($('#initial_balance').val()) || 0;
+                const amountInput = $('#initial_balance').val();
+                const amount = amountInput !== '' && amountInput !== null ? parseFloat(amountInput) : 0;
                 const selectedOption = $('#currency_id option:selected');
                 const rate = parseFloat(selectedOption.data('rate')) || 1;
                 const currencyCode = selectedOption.text().split(' ')[0] || '';
