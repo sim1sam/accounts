@@ -6,7 +6,7 @@
     <title>Ledger Report Print</title>
     <style>
         @page {
-            margin-bottom: 20px;
+            margin: 15mm 10mm 15mm 10mm;
         }
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +15,8 @@
             background-color: white;
             color: black;
             font-size: 12px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         
         .print-header {
@@ -52,12 +54,14 @@
         
         .customer-container {
             margin-bottom: 15px;
+            break-after: page;
             page-break-after: always;
             position: relative;
         }
         
         .customer-container:last-child {
-            page-break-after: avoid;
+            break-after: auto;
+            page-break-after: auto;
             margin-bottom: 30px; /* Space for footer */
         }
         
@@ -89,6 +93,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed;
         }
         
         .print-customer-table th,
@@ -112,11 +117,12 @@
             padding: 4px;
             text-align: right;
             font-size: 11px;
+            word-wrap: break-word;
         }
         
         .print-summary-table th,
         .print-details-table th {
-            background-color: #f2f2f2;
+            background-color: #f2f2f2 !important;
             font-weight: bold;
             text-align: center;
             color: #333;
@@ -130,15 +136,15 @@
         
         .total-row {
             font-weight: bold;
-            background-color: #f9f9f9;
+            background-color: #f9f9f9 !important;
         }
         
         .text-danger {
-            color: #dc3545;
+            color: #dc3545 !important;
         }
         
         .text-success {
-            color: #28a745;
+            color: #28a745 !important;
         }
         
         .report-footer {
@@ -147,27 +153,34 @@
             color: #777;
             border-top: 1px solid #ddd;
             padding-top: 5px;
-            margin-top: 0;
-            position: fixed;
-            bottom: 10px;
-            left: 0;
-            right: 0;
+            margin-top: 20px;
             width: 100%;
         }
         
         @media print {
-            body {
-                padding: 0;
+            html, body {
+                width: 100%;
+                height: 100%;
                 margin: 0;
+                padding: 0;
+            }
+            
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             
             .customer-container {
+                break-after: page;
                 page-break-after: always;
                 margin-bottom: 0;
+                display: block;
+                clear: both;
             }
             
             .customer-container:last-child {
-                page-break-after: avoid;
+                break-after: auto;
+                page-break-after: auto;
             }
             
             .print-header {
@@ -181,13 +194,18 @@
             .print-summary-table,
             .print-details-table {
                 margin-bottom: 10px;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             
             .report-footer {
-                position: fixed;
-                bottom: 0;
-                width: 100%;
+                margin-top: 20px;
             }
+            
+            table { page-break-inside:auto }
+            tr { page-break-inside:avoid; page-break-after:auto }
+            thead { display:table-header-group }
+            tfoot { display:table-footer-group }
         }
     </style>
 </head>
@@ -352,10 +370,12 @@
     </div>
     
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            window.print();
-        };
+        // Auto-print when page loads with a slight delay to ensure styles are fully loaded
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
     </script>
 </body>
 </html>

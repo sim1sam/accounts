@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\UserPermissionController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\ProfitLossController;
 
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
