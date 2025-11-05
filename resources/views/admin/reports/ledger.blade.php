@@ -29,14 +29,40 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="customer_id">Customer</label>
-                        <select name="customer_id" id="customer_id" class="form-control select2">
-                            <option value="">All Customers</option>
-                            @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" {{ request('customer_id') == $customer->id ? 'selected' : '' }}>
-                                    {{ $customer->name }} ({{ $customer->mobile }})
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="dropdown">
+                            <button class="btn btn-default dropdown-toggle form-control text-left" type="button" id="customerDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: white; border: 1px solid #ced4da; text-align: left;">
+                                <span id="selectedCustomerText">
+                                    @if(request('customer_id'))
+                                        @php
+                                            $selectedCustomer = $customers->firstWhere('id', request('customer_id'));
+                                        @endphp
+                                        @if($selectedCustomer)
+                                            {{ $selectedCustomer->mobile }} - {{ $selectedCustomer->name }}
+                                        @else
+                                            All Customers
+                                        @endif
+                                    @else
+                                        All Customers
+                                    @endif
+                                </span>
+                                <span class="caret float-right mt-1"></span>
+                            </button>
+                            <div class="dropdown-menu w-100" aria-labelledby="customerDropdown" style="max-height: 300px; overflow-y: auto;">
+                                <input type="text" class="form-control mb-2 mx-2 customer-search" id="customer_search" placeholder="Search by mobile number" style="width: 95%;">
+                                <div class="dropdown-divider"></div>
+                                <div id="customerOptions">
+                                    <a class="dropdown-item customer-option" href="#" data-id="" data-mobile="" data-name="">
+                                        All Customers
+                                    </a>
+                                    @foreach($customers as $customer)
+                                        <a class="dropdown-item customer-option" href="#" data-id="{{ $customer->id }}" data-mobile="{{ $customer->mobile }}" data-name="{{ $customer->name }}">
+                                            {{ $customer->mobile }} - {{ $customer->name }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="customer_id" id="customer_id" value="{{ request('customer_id') }}">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -213,6 +239,17 @@
 
 @section('css')
 <style>
+    .dropdown-toggle::after {
+        float: right;
+        margin-top: 10px;
+    }
+    #customer_search {
+        margin: 5px;
+        width: calc(100% - 10px);
+    }
+    .customer-option {
+        white-space: normal;
+    }
     .select2-container .select2-selection--single {
         height: 38px !important;
     }
@@ -320,25 +357,81 @@
 
 
 @section('js')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('.select2').select2();
+        // Initialize dropdown
+        $('.dropdown-toggle').dropdown();
+        
+        // Initialize select2 for bank dropdown (only if select2 is available)
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('#bank_id').select2();
+        }
+        
+        // Handle customer search - exactly like payment create
+        $(document).on('keyup', '.customer-search', function(e) {
+            e.stopPropagation();
+            var searchText = $(this).val().toLowerCase();
+            
+            $('#customerOptions .customer-option').each(function() {
+                var optionText = $(this).text().toLowerCase();
+                var customerId = $(this).attr('data-id') || '';
+                
+                // If search is empty, show all
+                if (searchText === '') {
+                    $(this).show();
+                }
+                // Hide "All Customers" when searching
+                else if (customerId === '') {
+                    $(this).hide();
+                }
+                // Filter by search text
+                else if (optionText.indexOf(searchText) !== -1) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+        
+        // Prevent dropdown from closing when clicking on search input
+        $(document).on('click', '.customer-search', function(e) {
+            e.stopPropagation();
+        });
+        
+        // Handle customer selection
+        $(document).on('click', '#customerOptions .customer-option', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $this = $(this);
+            var customerId = $this.attr('data-id') || '';
+            var customerMobile = $this.attr('data-mobile') || '';
+            var customerName = $this.attr('data-name') || '';
+            
+            // Update display and hidden input
+            if (customerId !== '') {
+                $('#selectedCustomerText').text(customerMobile + ' - ' + customerName);
+                $('#customer_id').val(customerId);
+            } else {
+                $('#selectedCustomerText').text('All Customers');
+                $('#customer_id').val('');
+            }
+            
+            // Close dropdown
+            $('#customerDropdown').dropdown('hide');
+        });
         
         // Set default dates if not already set
         if (!$('#start_date').val() && !$('#end_date').val()) {
-            // Set default to current month
             var date = new Date();
             var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
             var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
             
-            var firstDayFormatted = firstDay.toISOString().slice(0, 10);
-            var lastDayFormatted = lastDay.toISOString().slice(0, 10);
-            
-            $('#start_date').val(firstDayFormatted);
-            $('#end_date').val(lastDayFormatted);
+            $('#start_date').val(firstDay.toISOString().slice(0, 10));
+            $('#end_date').val(lastDay.toISOString().slice(0, 10));
         }
-        
-        // No print functionality needed here as we use a dedicated print route
     });
 </script>
 @stop
+

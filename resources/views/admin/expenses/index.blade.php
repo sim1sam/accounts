@@ -144,7 +144,7 @@
                 <!-- /.card-body -->
                 @if($expenses->hasPages())
                 <div class="card-footer clearfix">
-                    {{ $expenses->links() }}
+                    {{ $expenses->appends(request()->query())->links() }}
                 </div>
                 @endif
             </div>

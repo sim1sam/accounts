@@ -118,9 +118,11 @@
                         </tbody>
                     </table>
                     
-                    <div class="mt-3">
-                        {{ $invoices->links() }}
+                    @if($invoices->hasPages())
+                    <div class="card-footer clearfix">
+                        {{ $invoices->appends(request()->query())->links() }}
                     </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -105,9 +105,11 @@
                     @endforelse
                 </tbody>
             </table>
-            <div class="mt-3">
-                {{ $cancellations->links() }}
+            @if($cancellations->hasPages())
+            <div class="card-footer clearfix">
+                {{ $cancellations->appends(request()->query())->links() }}
             </div>
+            @endif
         </div>
     </div>
 @stop

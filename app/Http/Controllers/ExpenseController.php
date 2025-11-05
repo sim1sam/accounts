@@ -330,16 +330,12 @@ class ExpenseController extends Controller
                 $convertedBDT = (float) $request->payment_amount_bdt;
                 $rate = $currencyCode === 'BDT' ? 1.0 : ($convertedBDT / $paymentNative);
             } else {
-                // Calculate based on currency
+                // Calculate based on currency - use bank's conversion rate consistently
                 if ($currencyCode === 'BDT') {
                     $convertedBDT = $paymentNative;
                     $rate = 1.0;
-                } else if ($currencyCode === 'INR') {
-                    // Special case for INR: 1 INR = 1.45 BDT
-                    $convertedBDT = $paymentNative * 1.45;
-                    $rate = 1.45;
                 } else {
-                    // For other currencies, use the bank's conversion rate
+                    // Use the bank's conversion rate for all currencies (including INR)
                     $rate = (float) ($bank->currency->conversion_rate ?? 1);
                     if ($rate <= 0) { $rate = 1.0; }
                     $convertedBDT = $paymentNative * $rate;
@@ -393,16 +389,13 @@ class ExpenseController extends Controller
                     ->withInput();
             }
 
-            // Check bank has sufficient native balance
-            if ((float) ($bank->current_balance ?? 0) + 1e-6 < $paymentNative) {
-                Log::warning('processPayment: insufficient bank balance', [
-                    'bank_balance' => (float) ($bank->current_balance ?? 0),
-                    'needed' => $paymentNative,
-                ]);
-                return redirect()->back()
-                    ->withErrors(['bank_id' => 'Insufficient bank balance.'])
-                    ->withInput();
-            }
+            // Allow payments even when bank has negative balance (credit accounts)
+            // Payment will be processed and bank balance will go more negative if needed
+            Log::info('processPayment: processing payment', [
+                'bank_balance' => (float) ($bank->current_balance ?? 0),
+                'payment_amount' => $paymentNative,
+                'new_balance_will_be' => (float) ($bank->current_balance ?? 0) - $paymentNative,
+            ]);
 
             // Add currency conversion info to the description
             $currencyDescription = '';
@@ -430,12 +423,13 @@ class ExpenseController extends Controller
             Log::info('processPayment: transaction created', ['transaction_id' => $transaction->id ?? null]);
 
             // Update bank balance in native currency using helper
-            if (!$bank->decreaseBalance($paymentNative, false)) {
-                Log::error('processPayment: bank decreaseBalance failed');
-                return redirect()->back()
-                    ->withErrors(['bank_id' => 'Bank balance update failed.'])
-                    ->withInput();
-            }
+            // decreaseBalance now allows negative balances, so it should always succeed
+            $bank->decreaseBalance($paymentNative, false);
+            Log::info('processPayment: bank balance updated', [
+                'bank_id' => $bank->id,
+                'new_balance' => $bank->current_balance,
+                'new_balance_bdt' => $bank->amount_in_bdt,
+            ]);
 
             // Update account balance (DECREASE when paid). For partial, decrease by the partial BDT amount
             $account = $expense->account;

@@ -101,9 +101,11 @@
                 </tbody>
             </table>
 
-            <div class="mt-3">
-                {{ $deliveries->links() }}
+            @if($deliveries->hasPages())
+            <div class="card-footer clearfix">
+                {{ $deliveries->appends(request()->query())->links() }}
             </div>
+            @endif
         </div>
     </div>
 @stop

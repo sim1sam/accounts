@@ -42,14 +42,13 @@
             const rate = opt && opt.dataset.rate ? parseFloat(opt.dataset.rate) : 1;
             codeBadge.textContent = code;
             // Auto-fill expected native amount for the selected bank based on remaining due
-            // For INR specifically, use the correct conversion (1 BDT = 0.69 INR, so 1 INR = 1/0.69 BDT)
+            // Use bank's conversion rate consistently (BDT to native: BDT / rate)
             let expectedNative;
-            if (code === 'INR') {
-                // For INR, 1 BDT = 0.69 INR (or 1 INR = 1.45 BDT)
-                // Therefore, to convert BDT to INR: BDT * 0.69
-                expectedNative = expenseBDTRemaining * 0.69;
+            if (code === 'BDT') {
+                expectedNative = expenseBDTRemaining;
             } else {
-                expectedNative = code === 'BDT' ? expenseBDTRemaining : (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining);
+                // Convert BDT to native currency: native = BDT / rate
+                expectedNative = rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining;
             }
             if (!input.value || parseFloat(input.value) <= 0) {
                 input.value = expectedNative.toFixed(2);
@@ -58,24 +57,20 @@
             const entered = parseFloat(input.value || 0);
             let enteredBDT;
             
-            // Special handling for INR conversion
-            if (code === 'INR') {
-                // For INR, 1 INR = 1.45 BDT (as per requirement: INR 13.80 = BDT 20)
-                enteredBDT = entered * 1.45;
+            // Use bank's conversion rate consistently (native to BDT: native * rate)
+            if (code === 'BDT') {
+                enteredBDT = entered;
             } else {
-                enteredBDT = code === 'BDT' ? entered : (entered * (rate > 0 ? rate : 1));
+                enteredBDT = rate > 0 ? (entered * rate) : entered;
             }
             
             // Show remaining due in both currencies
             let remainingNative;
-            if (code === 'INR') {
-                remainingNative = expenseBDTRemaining * 0.69;
-                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2) + ' = INR ' + remainingNative.toFixed(2);
-            } else if (code !== 'BDT') {
+            if (code === 'BDT') {
+                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2);
+            } else {
                 remainingNative = rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining;
                 bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2) + ' = ' + code + ' ' + remainingNative.toFixed(2);
-            } else {
-                bdtHelper.textContent = 'Remaining due: BDT ' + expenseBDTRemaining.toFixed(2);
             }
             
             // Show payment amount in both currencies
@@ -99,15 +94,15 @@
                 // Use the stored BDT value if available
                 currentBDTValue = parseFloat(hiddenBDTField.value);
             } else if (input.value && parseFloat(input.value) > 0) {
-                // Calculate BDT from current input value
+                // Calculate BDT from current input value using previous bank's rate
                 const prevCode = codeBadge.textContent;
-                if (prevCode === 'INR') {
-                    currentBDTValue = parseFloat(input.value) * (1/0.69);
-                } else if (prevCode !== 'BDT') {
-                    const prevRate = bankSelect.options[bankSelect.selectedIndex].dataset.rate || 1;
-                    currentBDTValue = parseFloat(input.value) * parseFloat(prevRate);
-                } else {
+                if (prevCode === 'BDT') {
                     currentBDTValue = parseFloat(input.value);
+                } else {
+                    // Find previous bank option to get its rate
+                    const prevOption = Array.from(bankSelect.options).find(opt => opt.selected);
+                    const prevRate = prevOption && prevOption.dataset.rate ? parseFloat(prevOption.dataset.rate) : 1;
+                    currentBDTValue = prevRate > 0 ? (parseFloat(input.value) * prevRate) : parseFloat(input.value);
                 }
             } else {
                 // Default to remaining BDT if no value is set
@@ -115,18 +110,16 @@
             }
             
             // Auto-fill with converted amount based on the selected currency
-            if (code === 'INR') {
-                // Convert BDT to INR (BDT * 0.69) - for INR 13.80 = BDT 20
-                input.value = (expenseBDTRemaining * 0.69).toFixed(2);
-            } else if (code !== 'BDT') {
-                // For other currencies, use the rate from the bank
-                input.value = (rate > 0 ? (expenseBDTRemaining / rate) : expenseBDTRemaining).toFixed(2);
-            } else {
+            // Convert the current BDT value to the new bank's currency
+            if (code === 'BDT') {
                 // For BDT, use the BDT amount directly
-                input.value = expenseBDTRemaining.toFixed(2);
+                input.value = currentBDTValue.toFixed(2);
+            } else {
+                // For other currencies, convert BDT to native: native = BDT / rate
+                input.value = (rate > 0 ? (currentBDTValue / rate) : currentBDTValue).toFixed(2);
             }
             
-            // Update hidden BDT field
+            // Update hidden BDT field with the current BDT value
             hiddenBDTField.value = currentBDTValue.toFixed(2);
             
             recalc();

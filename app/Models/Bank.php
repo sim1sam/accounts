@@ -78,6 +78,7 @@ class Bank extends Model
     
     /**
      * Decrease the bank balance
+     * Allows negative balances (credit accounts)
      *
      * @param float $amount
      * @param bool $isBDT Whether the amount is in BDT or bank's currency
@@ -100,26 +101,23 @@ class Bank extends Model
             if ($currentBdt <= 0 && $currentNative > 0) {
                 $currentBdt = $rate > 0 ? ($currentNative * $rate) : $currentNative;
             }
-            if ($currentBdt + 1e-6 >= $amount) { // epsilon to avoid float edge cases
-                $this->amount_in_bdt = $currentBdt - $amount;
-                if ($this->currency) {
-                    $this->current_balance = $currentNative - ($amount / $rate);
-                } else {
-                    $this->current_balance = $currentNative - $amount;
-                }
-                return $this->save();
-            }
-        } else {
-            if ($currentNative + 1e-6 >= $amount) {
+            // Always allow decrease, even if it makes balance negative
+            $this->amount_in_bdt = $currentBdt - $amount;
+            if ($this->currency) {
+                $this->current_balance = $currentNative - ($amount / $rate);
+            } else {
                 $this->current_balance = $currentNative - $amount;
-                if ($this->currency) {
-                    $this->amount_in_bdt = $currentBdt - ($amount * $rate);
-                } else {
-                    $this->amount_in_bdt = $currentBdt - $amount;
-                }
-                return $this->save();
             }
+            return $this->save();
+        } else {
+            // Always allow decrease, even if it makes balance negative
+            $this->current_balance = $currentNative - $amount;
+            if ($this->currency) {
+                $this->amount_in_bdt = $currentBdt - ($amount * $rate);
+            } else {
+                $this->amount_in_bdt = $currentBdt - $amount;
+            }
+            return $this->save();
         }
-        return false;
     }
 }

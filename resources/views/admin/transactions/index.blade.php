@@ -135,9 +135,11 @@
                         </tbody>
                     </table>
                     
-                    <div class="mt-3">
-                        {{ $transactions->links() }}
+                    @if($transactions->hasPages())
+                    <div class="card-footer clearfix">
+                        {{ $transactions->appends(request()->query())->links() }}
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
